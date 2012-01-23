@@ -20,8 +20,6 @@
 #include "trace.h"
 #include "utility.h"
 
-#include <sqlite3.h>
-
 using namespace std;
 
 // -----------------------------------------------------------------------------
@@ -40,31 +38,6 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
     event_set sample_times;
     trace pt(4096);
 
-    sqlite3 *db = NULL;
-    sqlite3_stmt *stmt = NULL;
-    const char *cmd = NULL;
-
-    if (SQLITE_OK != sqlite3_open_v2("traces.db", &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL)) {
-        fprintf(stderr, "failed to open database\n");
-        return false;
-    }
-
-    cmd = "CREATE TABLE IF NOT EXISTS data (key TEXT, plaintext TEXT, data TEXT)";
-    if (SQLITE_OK != sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL)) {
-        fprintf(stderr, "failed to prepare create table command\n");
-        return false;
-    }
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
-
-    sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
-
-    cmd = "INSERT INTO data (key,plaintext,data) VALUES(?,?,?)";
-    if (SQLITE_OK != sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL)) {
-        fprintf(stderr, "failed to prepare statement\n");
-        return false;
-    }
-
     for (size_t i = 0; i < trace_count; ++i) {
         // construct the output file path
         string base = util::base_name(paths[i]);
@@ -76,23 +49,11 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
         printf("converting %s... [%ld/%ld]\n", fn.c_str(), i + 1, trace_count);
 
         // convert trace .out file to a more compact binary representation
-        // if (!pt.read_agilent(paths[i], range)) break;
-        // if (!pt.write_bin(fn, FMT_PWR_F32)) break;
-
-        sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, "dongs", -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 3, "exe", -1, SQLITE_TRANSIENT);
-
-        sqlite3_step(stmt);
+        if (!pt.read_agilent(paths[i], range)) break;
+        if (!pt.write_bin(fn, FMT_PWR_F32)) break;
 
         BENCHMARK_SAMPLE_WHEN(trace_convert, i && !(i % 100));
     }
-
-    sqlite3_finalize(stmt);
-
-    sqlite3_exec(db, "END TRANSACTION;", NULL, NULL, NULL);
-
-    sqlite3_close(db);
 
     // write the timing information to a text file
     return trace::write_profile("timing_profile.txt", sample_times);

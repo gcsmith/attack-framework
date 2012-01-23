@@ -16,6 +16,7 @@
 
 #include <string>
 #include <cstdio>
+#include <sqlite3.h>
 #include "cmdline.h"
 #include "trace.h"
 #include "utility.h"
@@ -38,29 +39,56 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
     event_set sample_times;
     trace pt(4096);
 
+    sqlite3 *db = NULL;
+    sqlite3_stmt *stmt = NULL;
+    const char *cmd = NULL;
+
+    if (SQLITE_OK != sqlite3_open_v2("traces.db", &db,
+                SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL)) {
+        fprintf(stderr, "failed to open database\n");
+        return false;
+    }
+
+    cmd = "CREATE TABLE IF NOT EXISTS data (key TEXT, plaintext TEXT, data TEXT)";
+    if (SQLITE_OK != sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL)) {
+        fprintf(stderr, "failed to prepare create table command\n");
+        return false;
+    }
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    sqlite3_exec(db, "BEGIN TRANSACTION;", NULL, NULL, NULL);
+
+    cmd = "INSERT INTO data (key,plaintext,data) VALUES(?,?,?)";
+    if (SQLITE_OK != sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL)) {
+        fprintf(stderr, "failed to prepare statement\n");
+        return false;
+    }
+
     for (size_t i = 0; i < trace_count; ++i) {
         // construct the output file path
         string base = util::base_name(paths[i]);
-        string name = util::concat_name(o_dir, base, ".bin");
+        string name = util::concat_name(o_dir, base, ".csv");
 
         printf("converting %s... [%ld/%ld]\n", base.c_str(), i+1, trace_count);
 
-        // convert trace .out file to a more compact binary representation
-        if (!pt.read_out(paths[i], range, sample_times)) {
-            fprintf(stderr, "failed to read trace '%s'\n", paths[i].c_str());
-            break;
-        }
+        if (!pt.read_bin(paths[i])) break;
 
-        if (!pt.write_bin(name, FMT_IDX_U32_PWR_F32)) {
-            fprintf(stderr, "failed to write trace '%s'\n", name.c_str());
-            break;
-        }
+        sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, "temp_1", -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, "temp_2", -1, SQLITE_TRANSIENT);
+        sqlite3_step(stmt);
 
         BENCHMARK_SAMPLE_WHEN(trace_convert, i && !(i % 100));
     }
 
+    sqlite3_finalize(stmt);
+    sqlite3_exec(db, "END TRANSACTION;", NULL, NULL, NULL);
+    sqlite3_close(db);
+
     // write the timing information to a text file
-    return trace::write_profile("timing_profile.txt", sample_times);
+    //return trace::write_profile("timing_profile.txt", sample_times);
+    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -69,7 +97,7 @@ int main(int argc, char *argv[])
     // build and parse the table of command line arguments
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
-        { CL_STR,  "input-dir,i",  "specify the input trace directory path" },
+        { CL_STR,  "input,i",      "input trace file or directory path" },
         { CL_STR,  "output-dir,o", "specify the output trace directory path" },
         { CL_LONG, "time-min,m",   "earliest sample event time to convert" },
         { CL_LONG, "time-max,M",   "latest sample event time to convert" },
@@ -85,20 +113,23 @@ int main(int argc, char *argv[])
     }
 
     // parse each command line argument from the variable map
-    string in_dir   = cl.get_str("input-dir", "trace_out");
+    string input   = cl.get_str("input", "trace_out");
     string out_dir  = cl.get_str("output-dir", "trace_bin");
     long time_min   = cl.get_long("time-min", 0);
     long time_max   = cl.get_long("time-max", 402000);
     long num_traces = cl.get_long("num-traces", 0);
+    time_range tr   = make_pair(time_min, time_max);
 
     // make sure that the input and output directories exist and are valid
-    if (!util::check_inout_directories(in_dir, out_dir))
-        return 1;
+//  if (!util::check_inout_directories(input, out_dir))
+//      return 1;
 
     util::pathlist paths;
-    util::scan_directory(in_dir, ".out", paths);
+    if (util::is_dir(input))
+        util::scan_directory(input, ".bin", paths);
+    else
+        paths.push_back(input);
 
-    return convert_traces(out_dir, paths,
-                          make_pair(time_min, time_max), num_traces);
+    return convert_traces(out_dir, paths, tr, num_traces);
 }
 
