@@ -119,20 +119,20 @@ void shift_rows_inv(const uint8_t *s_in, uint8_t *s_out)
 void mix_columns(const uint8_t *s_in, uint8_t *s_out)
 {
     for (int i = 0; i < 4; ++i, s_in += 4, s_out += 4) {
-        s_out[0] = _2(s_in[0]) ^ _3(s_in[1]) ^ _1(s_in[2]) ^ _1(s_in[3]);
-        s_out[1] = _1(s_in[0]) ^ _2(s_in[1]) ^ _3(s_in[2]) ^ _1(s_in[3]);
-        s_out[2] = _1(s_in[0]) ^ _1(s_in[1]) ^ _2(s_in[2]) ^ _3(s_in[3]);
-        s_out[3] = _3(s_in[0]) ^ _1(s_in[1]) ^ _1(s_in[2]) ^ _2(s_in[3]);
+        s_out[0] = _m2(s_in[0]) ^ _m3(s_in[1]) ^ _m1(s_in[2]) ^ _m1(s_in[3]);
+        s_out[1] = _m1(s_in[0]) ^ _m2(s_in[1]) ^ _m3(s_in[2]) ^ _m1(s_in[3]);
+        s_out[2] = _m1(s_in[0]) ^ _m1(s_in[1]) ^ _m2(s_in[2]) ^ _m3(s_in[3]);
+        s_out[3] = _m3(s_in[0]) ^ _m1(s_in[1]) ^ _m1(s_in[2]) ^ _m2(s_in[3]);
     }
 }
 // -----------------------------------------------------------------------------
 void mix_columns_inv(const uint8_t *s_in, uint8_t *s_out)
 {
     for (int i = 0; i < 4; ++i, s_in += 4, s_out += 4) {
-        s_out[0] = _E(s_in[0]) ^ _B(s_in[1]) ^ _D(s_in[2]) ^ _9(s_in[3]);
-        s_out[1] = _9(s_in[0]) ^ _E(s_in[1]) ^ _B(s_in[2]) ^ _D(s_in[3]);
-        s_out[2] = _D(s_in[0]) ^ _9(s_in[1]) ^ _E(s_in[2]) ^ _B(s_in[3]);
-        s_out[3] = _B(s_in[0]) ^ _D(s_in[1]) ^ _9(s_in[2]) ^ _E(s_in[3]);
+        s_out[0] = _mE(s_in[0]) ^ _mB(s_in[1]) ^ _mD(s_in[2]) ^ _m9(s_in[3]);
+        s_out[1] = _m9(s_in[0]) ^ _mE(s_in[1]) ^ _mB(s_in[2]) ^ _mD(s_in[3]);
+        s_out[2] = _mD(s_in[0]) ^ _m9(s_in[1]) ^ _mE(s_in[2]) ^ _mB(s_in[3]);
+        s_out[3] = _mB(s_in[0]) ^ _mD(s_in[1]) ^ _m9(s_in[2]) ^ _mE(s_in[3]);
     }
 }
 

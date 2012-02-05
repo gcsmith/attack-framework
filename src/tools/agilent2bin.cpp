@@ -30,7 +30,7 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
 
     size_t trace_count = paths.size();
     if (max_trace && max_trace < trace_count) {
-        printf("only processing %ld of %ld traces\n", max_trace, trace_count);
+        printf("only processing %zu of %zu traces\n", max_trace, trace_count);
         trace_count = max_trace;
     }
 
@@ -46,7 +46,7 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
         string key = util::hexstring_to_filename(base.substr(pos + 2, 16), 8);
         string fn = util::concat_name(o_dir, key, ".bin");
 
-        printf("converting %s... [%ld/%ld]\n", fn.c_str(), i + 1, trace_count);
+        printf("converting %s... [%zu/%zu]\n", fn.c_str(), i + 1, trace_count);
 
         // convert trace .out file to a more compact binary representation
         if (!pt.read_agilent(paths[i], range)) break;

@@ -307,7 +307,7 @@ bool attack_engine::attack_setup()
     // determine the number of traces and the order we will process them in
     m_numtraces = m_paths.size();
     if (m_tracemax && m_tracemax < m_numtraces) {
-        printf("only processing %ld of %ld traces\n", m_tracemax, m_numtraces);
+        printf("only processing %zu of %zu traces\n", m_tracemax, m_numtraces);
         m_numtraces = m_tracemax;
     }
 
@@ -374,7 +374,7 @@ bool attack_engine::run()
     if (!attack_setup())
         return false;
 
-    printf("attacking with %ld trace(s)...\n", m_numtraces);
+    printf("attacking with %zu trace(s)...\n", m_numtraces);
 
     m_group.join_all();
 
@@ -401,7 +401,7 @@ bool attack_engine::next_trace(int id, vector<long> &tm, trace &pt)
             return false;
 
         path = m_paths[m_order[m_trace++]];
-        printf("processing trace %s [%d:%lu/%lu]\n",
+        printf("processing trace %s [%d:%zu/%zu]\n",
                path.c_str(), id, m_trace, m_numtraces);
     }
 

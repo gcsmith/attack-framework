@@ -4,7 +4,7 @@
 # Created: 08/29/2011
 # -----------------------------------------------------------------------------
 
-cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
+cmake_minimum_required(VERSION 2.8.4 FATAL_ERROR)
 project(attack-framework)
 
 # set default project options

@@ -297,7 +297,7 @@ void trace::sample_and_hold(const trace &pt, const vector<long> &times)
 
     m_samples.resize(num_events);
     for (size_t i = 0, j = 0; i < num_events; ++i) {
-        if ((j < num_samples) && (times[i] == pt[j].time))
+        if ((j < num_samples) && (times[i] == (long)pt[j].time))
             curr_power = pt[j++].power;
         m_samples[i].time = times[i];
         m_samples[i].power = curr_power;

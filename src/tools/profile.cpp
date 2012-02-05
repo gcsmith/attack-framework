@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < paths.size(); ++i) {
         pt.read_bin(paths[i]);
         pt.merge_events(sample_times);
-        printf("processed %s [%ld/%ld]\n", paths[i].c_str(), i+1, paths.size());
+        printf("processed %s [%zu/%zu]\n", paths[i].c_str(), i+1, paths.size());
     }
 
     trace::write_profile(output, sample_times);

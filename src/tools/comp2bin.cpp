@@ -51,7 +51,7 @@ bool parse_index_file(const string &path, const string &key,
         }
     }
 
-    printf("matched %ld trace files for key %s\n", traces.size(), key.c_str());
+    printf("matched %zu trace files for key %s\n", traces.size(), key.c_str());
     return true;
 }
 
@@ -64,7 +64,7 @@ bool convert_traces(const string &i_dir, const string &o_dir,
 
     size_t trace_count = traces.size();
     if (max_trace && max_trace < trace_count) {
-        printf("only processing %ld of %ld traces\n", max_trace, trace_count);
+        printf("only processing %zu of %zu traces\n", max_trace, trace_count);
         trace_count = max_trace;
     }
 
@@ -75,7 +75,7 @@ bool convert_traces(const string &i_dir, const string &o_dir,
         string o_path = util::concat_name(o_dir, o_name, ".bin");
         string i_path = util::concat_name(i_dir, traces[i].second, ".csv");
 
-        printf("converting %s... [%ld/%ld]\n", o_name.c_str(), i+1, trace_count);
+        printf("converting %s... [%zu/%zu]\n", o_name.c_str(), i+1, trace_count);
 
         // convert trace .out file to a more compact binary representation
         if (!pt.read_csv(i_path, range)) break;

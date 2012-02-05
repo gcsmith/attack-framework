@@ -30,7 +30,7 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
 
     size_t trace_count = paths.size();
     if (max_trace && max_trace < trace_count) {
-        printf("only processing %ld of %ld traces\n", max_trace, trace_count);
+        printf("only processing %zu of %zu traces\n", max_trace, trace_count);
         trace_count = max_trace;
     }
 
@@ -43,7 +43,7 @@ bool convert_traces(const string &o_dir, const util::pathlist &paths,
         string base = util::base_name(paths[i]);
         string name = util::concat_name(o_dir, base, ".csv");
 
-        printf("converting %s... [%ld/%ld]\n", base.c_str(), i+1, trace_count);
+        printf("converting %s... [%zu/%zu]\n", base.c_str(), i+1, trace_count);
 
         if (!pt.read_bin(paths[i])) break;
         if (!pt.write_csv(name)) break;

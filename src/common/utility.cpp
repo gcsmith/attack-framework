@@ -72,7 +72,7 @@ bool parse_plaintext(const string &filename, uint8_t *bytes, size_t count)
     boost::split(tokens, str, boost::is_any_of("_."));
 
     if (count && (tokens.size() != count)) {
-        fprintf(stderr, "bad trace name %s: parsed %lu bytes, expected %lu\n",
+        fprintf(stderr, "bad trace name %s: parsed %zu bytes, expected %zu\n",
                 filename.c_str(), tokens.size(), count);
         return false;
     }

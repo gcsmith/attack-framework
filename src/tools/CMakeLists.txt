@@ -7,17 +7,17 @@
 set(boost_components filesystem program_options system thread)
 
 find_package(Boost 1.46.1 COMPONENTS ${boost_components} REQUIRED)
-find_package(Sqlite3 REQUIRED)
+# find_package(Sqlite3 REQUIRED)
 
 include_directories(
     ${Boost_INCLUDE_DIRS}
-    ${SQLITE3_INCLUDEDIR}
+#   ${SQLITE3_INCLUDEDIR}
 )
 
 set(tool_libs
     common rt
     ${Boost_LIBRARIES}
-    ${SQLITE3_LIBRARIES}
+#   ${SQLITE3_LIBRARIES}
 )
 
 # ------------------------------------------------------------------------------
