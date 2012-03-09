@@ -30,12 +30,12 @@ class attack_thread
 {
 public:
     attack_thread(int id, attack_engine *engine);
-    ~attack_thread();
+    ~attack_thread(void);
 
     bool create(const string &an, const string &cn, const parameters &p);
-    void run();
-    attack_instance *attack() const { return m_attack.get(); }
-    crypto_instance *crypto() const { return m_crypto.get(); }
+    void run(void);
+    attack_instance *attack(void) const { return m_attack.get(); }
+    crypto_instance *crypto(void) const { return m_crypto.get(); }
 
 protected:
     int m_id;
@@ -51,7 +51,7 @@ attack_thread::attack_thread(int id, attack_engine *engine)
 }
 
 // -----------------------------------------------------------------------------
-attack_thread::~attack_thread()
+attack_thread::~attack_thread(void)
 {
     m_attack->cleanup();
 }
@@ -75,7 +75,7 @@ bool attack_thread::create(const string &an, const string &cn, const parameters 
 }
 
 // -----------------------------------------------------------------------------
-void attack_thread::run()
+void attack_thread::run(void)
 {
     trace pt(4096);
     vector<long> mapper;
@@ -85,15 +85,14 @@ void attack_thread::run()
 }
 
 // -----------------------------------------------------------------------------
-attack_engine::attack_engine()
+attack_engine::attack_engine(void)
 : m_tracemax(0), m_numtraces(0), m_numintervals(0), m_interval(0),
-  m_numthreads(3), m_idir("."), m_odir("."), m_prefix("out"),
-  m_attack_name("cpa"), m_crypto_name("aes_hw_r0")
+  m_numthreads(3), m_prefix("out"), m_attack_name("cpa"), m_crypto_name("aes_hw_r0")
 {
 }
 
 // -----------------------------------------------------------------------------
-attack_engine::~attack_engine()
+attack_engine::~attack_engine(void)
 {
 }
 
@@ -121,13 +120,15 @@ void attack_engine::set_crypto(const string &name)
 }
 
 // -----------------------------------------------------------------------------
+void attack_engine::set_reader(trace_reader *pReader)
+{
+    m_reader = pReader;
+}
+
+// -----------------------------------------------------------------------------
 void attack_engine::set_params(const string &params)
 {
-    vector<string> tok;
-    util::split(tok, params, ",");
-
-    for (vector<string>::const_iterator i = tok.begin(); i != tok.end(); ++i) {
-        const string &expr = *i;
+    foreach (const string &expr, util::split(params, ",")) {
         size_t pos = expr.find_first_of('=');
         if (string::npos == pos) {
             fprintf(stderr, "bad parameter declaration: %s\n", expr.c_str());
@@ -135,18 +136,6 @@ void attack_engine::set_params(const string &params)
         }
         m_params.put(expr.substr(0, pos), expr.substr(pos + 1));
     }
-}
-
-// -----------------------------------------------------------------------------
-bool attack_engine::set_paths(const string &i_dir, const string &o_dir)
-{
-    // make sure that the input and output directories exist and are valid
-    if (!util::check_inout_directories(i_dir, o_dir))
-        return false;
-
-    m_idir = i_dir;
-    m_odir = o_dir;
-    return true;
 }
 
 // -----------------------------------------------------------------------------
@@ -174,13 +163,6 @@ void attack_engine::set_thread_count(size_t count)
 }
 
 // -----------------------------------------------------------------------------
-bool attack_engine::load_trace_order(const string &path)
-{
-    // read in the order in which to process the traces
-    return trace::read_profile(path, m_order);
-}
-
-// -----------------------------------------------------------------------------
 bool attack_engine::load_trace_profile(const string &path)
 {
     // read in the time indices for these traces from the timing profile
@@ -196,12 +178,22 @@ void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
         return;
     }
 
+    int best_k = -1, at_sample = -1;
+    double max_diff = 0.0;
     for (size_t i = 0; i < num_events; ++i) {
         m_odif << scientific << m_times[i] << ',';
-        for (int k = 0; k < nk; ++k)
-            m_odif << diffs[k * num_events + i] << ',';
+        for (int k = 0; k < nk; ++k) {
+            double value = diffs[k * num_events + i];
+            m_odif << value << ',';
+            if (fabs(value) > max_diff) {
+                max_diff = fabs(value);
+                best_k = k;
+                at_sample = i;
+            }
+        }
         m_odif << endl;
     }
+    printf("best key guess = %02x @ %d (%lf)\n", best_k, at_sample, max_diff);
 }
 
 // -----------------------------------------------------------------------------
@@ -263,57 +255,21 @@ void attack_engine::write_confs_report(const vector<double> &maxes)
 }
 
 // -----------------------------------------------------------------------------
-bool attack_engine::check_order(vector<long> &order, size_t tnum, size_t tmax)
-{
-    // must specify order for at least as many traces as we're processing
-    if (order.size() < tnum)
-        return false;
-
-    // check for duplicates and indices out of bounds
-    set<long> duplicates;
-    for (size_t i = 0; i < order.size(); ++i) {
-        if (order[i] >= (long)tmax || duplicates.count(order[i]))
-            return false;
-        else duplicates.insert(order[i]);
-    }
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::build_order(vector<long> &order, size_t tnum, size_t tmax)
-{
-    order.resize(tmax);
-    for (size_t i = 0; i < tmax; ++i)
-        order[i] = i;
-    random_shuffle(order.begin(), order.end());
-    order.resize(tnum);
-}
-
-// -----------------------------------------------------------------------------
-bool attack_engine::attack_setup()
+bool attack_engine::attack_setup(const string &odir)
 {
     // open the results file descriptors well in advance so we don't have to
     // bail out after a particularly lengthy attack
-    if (!open_out(util::concat_name(m_odir, m_prefix + "_diffs.csv"), m_odif) ||
-        !open_out(util::concat_name(m_odir, m_prefix + "_group.csv"), m_ogrp) ||
-        !open_out(util::concat_name(m_odir, m_prefix + "_maxes.csv"), m_omax) || 
-        !open_out(util::concat_name(m_odir, m_prefix + "_confs.csv"), m_conf))
-        return false;
-
-    if (!util::scan_directory(m_idir, ".bin", m_paths))
+    if (!open_out(util::concat_name(odir, m_prefix + "_diffs.csv"), m_odif) ||
+        !open_out(util::concat_name(odir, m_prefix + "_group.csv"), m_ogrp) ||
+        !open_out(util::concat_name(odir, m_prefix + "_maxes.csv"), m_omax) || 
+        !open_out(util::concat_name(odir, m_prefix + "_confs.csv"), m_conf))
         return false;
 
     // determine the number of traces and the order we will process them in
-    m_numtraces = m_paths.size();
+    m_numtraces = m_reader->trace_count();
     if (m_tracemax && m_tracemax < m_numtraces) {
         printf("only processing %zu of %zu traces\n", m_tracemax, m_numtraces);
         m_numtraces = m_tracemax;
-    }
-
-    if (!check_order(m_order, m_numtraces, m_paths.size())) {
-        printf("trace order invalid or unspecified. using random order\n");
-        build_order(m_order, m_numtraces, m_paths.size());
     }
 
     // determine the number of interval reports, including the final report
@@ -346,7 +302,7 @@ bool attack_engine::attack_setup()
 }
 
 // -----------------------------------------------------------------------------
-void attack_engine::attack_shutdown()
+void attack_engine::attack_shutdown(void)
 {
     vector<double> diffs, maxes;
     vector<size_t> groups;
@@ -361,17 +317,17 @@ void attack_engine::attack_shutdown()
     write_confs_report(maxes);
     write_group_report(groups, ngroups);
 
-    vector<attack_thread *>::const_iterator i;
-    for (i = m_threads.begin(); i != m_threads.end(); ++i)
-        delete *i;
+    foreach (attack_thread *thrd, m_threads) {
+        delete thrd;
+    }
 }
 
 // -----------------------------------------------------------------------------
-bool attack_engine::run()
+bool attack_engine::run(const string &results_path)
 {
     BENCHMARK_DECLARE(attack_whole);
 
-    if (!attack_setup())
+    if (!attack_setup(results_path))
         return false;
 
     printf("attacking with %zu trace(s)...\n", m_numtraces);
@@ -392,31 +348,31 @@ bool attack_engine::run()
 }
 
 // -----------------------------------------------------------------------------
-bool attack_engine::next_trace(int id, vector<long> &tm, trace &pt)
+// Read in the next available power trace and generate the trace's event map.
+bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
 {
-    string path;
     {
+        // lock the next power trace selection to avoid race conditions
         boost::lock_guard<boost::mutex> lock(m_mutex);
         if (m_trace >= m_numtraces)
             return false;
 
-        path = m_paths[m_order[m_trace++]];
+        // request the next power trace from the trace reader
+        trace::time_range range(0, 0);
+        if (!m_reader->read(pt, range)) {
+            fprintf(stderr, "[%d] failed to read trace %zu\n", id, m_trace + 1);
+            return false;
+        }
+
+        const string trace_text(util::btoa(pt.text()));
         printf("processing trace %s [%d:%zu/%zu]\n",
-               path.c_str(), id, m_trace, m_numtraces);
+               trace_text.c_str(), id, ++m_trace, m_numtraces);
     }
 
-    // extract the 16 byte plaintext from the trace's filename and load trace
-    vector<uint8_t> bytes(16);
-    util::parse_plaintext(path, &bytes[0], 0);
-    pt.set_text(bytes);
-
-#if 0
-    if (!pt.read_bin(path))
-        return false;
-
+#if 1
     // map each sample index to its corresponding event index
     const size_t num_samples = pt.size();
-    tm.reserve(num_samples);
+    tmap.reserve(num_samples);
 
     for (size_t s = 0; s < num_samples; ++s) {
         xlat_map::const_iterator iter = m_xlat.find(pt[s].time);
@@ -424,16 +380,16 @@ bool attack_engine::next_trace(int id, vector<long> &tm, trace &pt)
             printf("event %d not present in timing profile\n", pt[s].time);
             return false;
         }
-        tm[s] = iter->second;
+        tmap[s] = iter->second;
     }
 #else
-    trace temp;
-    if (!temp.read_bin(path))
-        return false;
-    pt.sample_and_hold(temp, m_times);
-
-    tm.resize(pt.size());
-    for (size_t s = 0; s < pt.size(); ++s) tm[s] = s;
+       trace temp;
+       if (!temp.read_bin(path))
+           return false;
+       pt.sample_and_hold(temp, m_times);
+   
+       tmap.resize(pt.size());
+       for (size_t s = 0; s < pt.size(); ++s) tmap[s] = s;
 #endif
 
     return true;

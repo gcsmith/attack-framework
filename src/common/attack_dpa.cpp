@@ -91,8 +91,10 @@ bool attack_dpa<real>::setup(crypto_instance *crypto, const parameters &params)
         !params.get("byte", m_byte) ||
         !params.get("offset", m_offset) ||
         !params.get("bits", m_bits) ||
-        !params.get("thresh", m_thresh))
+        !params.get("thresh", m_thresh)) {
+        fprintf(stderr, "missing parameters in attack_dpa\n");
         return false;
+    }
 
     m_mask = 0;
     for (unsigned int i = m_offset; i < (m_offset + m_bits); ++i)
@@ -115,7 +117,7 @@ template <typename real>
 void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
 {
     const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.get_text());
+    m_crypto->set_message(pt.text());
 
     for (int k = 0; k < m_guesses; ++k) {
         const unsigned int target = m_crypto->compute(m_byte, k);

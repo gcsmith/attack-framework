@@ -15,9 +15,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
-#include <stdio.h>
+#include <memory>
+#include <cstdio>
 #include "cmdline.h"
-#include "trace.h"
+#include "trace_format.h"
 #include "utility.h"
 
 using namespace std;
@@ -28,9 +29,10 @@ int main(int argc, char *argv[])
     // build and parse the table of command line arguments
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
-        { CL_STR,  "input-dir,i", "specify the input trace directory path" },
-        { CL_STR,  "output,o",    "specify the output timing profile path" },
-        { CL_FLAG, "help,h",      "display this usage message" },
+        { CL_STR,  "src-fmt,s",     "specify trace source format" },
+        { CL_STR,  "input-path,i",  "specify the input trace directory path" },
+        { CL_STR,  "output-path,o", "specify the output timing profile path" },
+        { CL_FLAG, "help,h",        "display this usage message" },
         { CL_TERM, 0, 0 }
     };
 
@@ -41,22 +43,31 @@ int main(int argc, char *argv[])
     }
 
     // parse each command line argument from the variable map
-    string in_dir = cl.get_str("input-dir", "trace_out");
-    string output = cl.get_str("output", "timing_profile.txt");
+    string src_fmt  = cl.get_str("src-fmt", "packed");
+    string in_path  = cl.get_str("input-path", "trace_out");
+    string out_path = cl.get_str("output-path", "timing_profile.txt");
 
-    util::pathlist paths;
-    util::scan_directory(in_dir, ".bin", paths);
+    // create reader and writer for specified source/destination trace formats
+    auto_ptr<trace_reader> pReader(trace_reader::create(src_fmt));
+    if (!pReader.get() || !pReader->open(in_path, "", false))
+        return 1;
 
-    event_set sample_times;
-    trace pt(4096);
+    // process each input trace and build the complete set of sample events
+    trace pt;
+    trace::time_range range(0, 0);
+    const size_t trace_count = pReader->trace_count();
 
-    for (size_t i = 0; i < paths.size(); ++i) {
-        pt.read_bin(paths[i]);
-        pt.merge_events(sample_times);
-        printf("processed %s [%zu/%zu]\n", paths[i].c_str(), i+1, paths.size());
+    for (size_t i = 0; i < trace_count; ++i) {
+        if (!pReader->read(pt, range)) {
+            fprintf(stderr, "failed to read trace %zu\n", i);
+            return 1;
+        }
+        const string text(util::btoa(pt.text()));
+        printf("processed %s [%zu/%zu]\n", text.c_str(), i + 1, trace_count);
     }
 
-    trace::write_profile(output, sample_times);
+    // write out the timing profile and close the reader/writer objects
+    trace::write_profile(out_path, pReader->events());
     return 0;
 }
 

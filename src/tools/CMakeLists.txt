@@ -7,48 +7,18 @@
 set(boost_components filesystem program_options system thread)
 
 find_package(Boost 1.46.1 COMPONENTS ${boost_components} REQUIRED)
-# find_package(Sqlite3 REQUIRED)
+find_package(Sqlite3 REQUIRED)
 
 include_directories(
     ${Boost_INCLUDE_DIRS}
-#   ${SQLITE3_INCLUDEDIR}
+    ${SQLITE3_INCLUDEDIR}
 )
 
 set(tool_libs
     common rt
     ${Boost_LIBRARIES}
-#   ${SQLITE3_LIBRARIES}
+    ${SQLITE3_LIBRARIES}
 )
-
-# ------------------------------------------------------------------------------
-project(agilent2bin)
-
-add_executable(agilent2bin agilent2bin.cpp ${common_hdr})
-target_link_libraries(agilent2bin ${tool_libs})
-
-# ------------------------------------------------------------------------------
-project(bin2csv)
-
-add_executable(bin2csv bin2csv.cpp ${common_hdr})
-target_link_libraries(bin2csv ${tool_libs})
-
-# ------------------------------------------------------------------------------
-project(out2bin)
-
-add_executable(out2bin out2bin.cpp ${common_hdr})
-target_link_libraries(out2bin ${tool_libs})
-
-# ------------------------------------------------------------------------------
-project(comp2bin)
-
-add_executable(comp2bin comp2bin.cpp ${common_hdr})
-target_link_libraries(comp2bin ${tool_libs})
-
-# ------------------------------------------------------------------------------
-project(profile)
-
-add_executable(profile profile.cpp ${common_hdr})
-target_link_libraries(profile ${tool_libs})
 
 # ------------------------------------------------------------------------------
 project(aestool)
@@ -57,10 +27,28 @@ add_executable(aestool aestool.cpp ${common_hdr})
 target_link_libraries(aestool ${tool_libs})
 
 # ------------------------------------------------------------------------------
+project(convert)
+
+add_executable(convert convert.cpp ${common_hdr})
+target_link_libraries(convert ${tool_libs})
+
+# ------------------------------------------------------------------------------
 project(destool)
 
 add_executable(destool destool.cpp ${common_hdr})
 target_link_libraries(destool ${tool_libs})
+
+# ------------------------------------------------------------------------------
+project(grostltool)
+
+add_executable(grostltool grostltool.cpp ${common_hdr})
+target_link_libraries(grostltool ${tool_libs})
+
+# ------------------------------------------------------------------------------
+project(profile)
+
+add_executable(profile profile.cpp ${common_hdr})
+target_link_libraries(profile ${tool_libs})
 
 # ------------------------------------------------------------------------------
 project(attack)

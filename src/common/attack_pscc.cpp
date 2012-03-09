@@ -97,7 +97,7 @@ bool attack_pscc::setup(crypto_instance *crypto, const parameters &params)
 void attack_pscc::process(const time_map &tmap, const trace &pt)
 {
     const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.get_text());
+    m_crypto->set_message(pt.text());
 
     // accumulate weight and weight^2 of the sensitive value
     real weight = 0;

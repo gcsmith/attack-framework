@@ -28,7 +28,7 @@ def guess_key_from_diff(data):
     for k in range(1, data.shape[0]):
         for i in range(0, data.shape[1]):
             if math.fabs(data[k][i]) > curr_max:
-                curr_max = data[k][i]
+                curr_max = math.fabs(data[k][i])
                 key_idx = k
                 sample = i;
     return key_idx-1, curr_max, sample

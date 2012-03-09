@@ -33,6 +33,7 @@ int ReadWaveformHeader(FILE* inputFile, tPBWaveformHeader* waveformHeader)
     {
         // read in header size
         headerSize = 0;
+        memset(waveformHeader, 0, sizeof(tPBWaveformHeader));
         if (sizeof(headerSize) != fread(&headerSize, 1, sizeof(headerSize), inputFile))
             fprintf(stderr, "ReadWaveformHeader: read error\n");
         // create header buffer
@@ -47,7 +48,7 @@ int ReadWaveformHeader(FILE* inputFile, tPBWaveformHeader* waveformHeader)
             // Now set dataHeader from headerBuffer
             // any extra information stored in the file
             // will be ignored
-            memcpy((char*) waveformHeader, headerBuffer, sizeof(tPBWaveformHeader));
+            memcpy((char*) waveformHeader, headerBuffer, headerSize);
             success = 1;
             // Just is case WaveformType has been enhanced
             if (waveformHeader->WaveformType > PB_LOGIC)
@@ -182,6 +183,13 @@ float* ReadAnalogWaveform(FILE* inputFile,
         }
     }
     return pWaveformData;
+}
+
+// -----------------------------------------------------------------------------
+void DestroyAnalogWaveform(float *pWaveformData)
+{
+    if (NULL != pWaveformData)
+        free(pWaveformData);
 }
 
 // Returns a buffer with the histogram counts data read in if successful

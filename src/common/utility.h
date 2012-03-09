@@ -17,18 +17,22 @@
 #ifndef UTILITY__H
 #define UTILITY__H
 
-#include <time.h>
 #include <stdint.h>
+#include <ctime>
 #include <string>
 #include <vector>
 #include <map>
 #include <sstream>
+#include <boost/foreach.hpp>
 
 #define EPSILON 0.00001
 
-#define ENABLE_BENCHMARK 1
+#define ENABLE_BENCHMARK
 
-#if ENABLE_BENCHMARK
+#define foreach BOOST_FOREACH
+
+#ifdef ENABLE_BENCHMARK
+
 #define BENCHMARK_DECLARE(n)                                                   \
     static const char *BM_##n##_name = #n;                                     \
     double BM_##n##_delta;                                                     \
@@ -44,49 +48,50 @@
 #define BENCHMARK_SAMPLE_WHEN(n, cond) if (cond) { BENCHMARK_SAMPLE(n) }
 
 #else // !ENABLE_BENCHMARK
+
 #define BENCHMARK_DECLARE(n)
 #define BENCHMARK_SAMPLE_WHEN(n, cond)
+
 #endif
 
 namespace util {
 
 typedef std::vector<std::string> pathlist;
 
-// TODO: description
-bool scan_directory(const std::string &i_dir, const std::string &ext,
-                    pathlist &paths);
-
-// TODO: description
-bool parse_plaintext(const std::string &filename, uint8_t *bytes, size_t count);
-
-// TODO: description
-std::string hexstring_to_filename(const std::string &str, size_t count);
+// Return a list of the files in a directory matching the specified extension.
+bool scan_directory(const std::string &i_dir, const std::string &ext, pathlist &paths);
 
 /// Convert a hexadecimal string into an array of bytes.
 bool atob(const std::string &str, uint8_t *bytes, size_t count);
 
+/// Convert a hexadecimal string into an array of bytes.
+std::vector<uint8_t> atob(const std::string &str);
+
 /// Convert an array of bytes into a hexadecimal string.
 std::string btoa(const uint8_t *bytes, size_t count);
 
-// TODO: description
+/// Convert an array of bytes into a hexadecimal string.
+std::string btoa(const std::vector<uint8_t> &bytes);
+
+// Ensure that the specified input and output directories exist (or create).
 bool check_inout_directories(const std::string &i_dir, const std::string &o_dir);
 
-// TODO: description
+// Returns the stem portion of a complete file path.
 std::string base_name(const std::string &filename);
 
-// TODO: description
+// Concatenate the specified directory and filename.
 std::string concat_name(const std::string &dir, const std::string &name);
 
-// TODO: description
+// Concatenate the specified directory, filename, and extension.
 std::string concat_name(const std::string &dir, const std::string &name, const std::string &ext);
 
-// TODO: description
-void split(std::vector<std::string> &tokens, const std::string &str, const std::string &delim);
+// Split the input string given a string of delimiters.
+std::vector<std::string> split(const std::string &str, const std::string &del);
 
-// TODO: description
+// Returns true if the specified path is a directory.
 bool is_dir(const std::string &path);
 
-// TODO: description
+// Reverse the bits in a variable length integer.
 inline int revb(int x, int bits)
 {
     int r = 0;
@@ -94,7 +99,7 @@ inline int revb(int x, int bits)
     return r;
 }
 
-// TODO: description
+// Reverse the bits in a 32-bit unsigned integer.
 inline uint32_t rev32(uint32_t x)
 {
     uint32_t r = 0;
@@ -102,7 +107,7 @@ inline uint32_t rev32(uint32_t x)
     return r;
 }
 
-// TODO: description
+// Reverse the bits in a 64-bit unsigned integer.
 inline uint64_t rev64(uint64_t x)
 {
     uint64_t r = 0;
@@ -110,6 +115,7 @@ inline uint64_t rev64(uint64_t x)
     return r;
 }
 
+// Convert an array of 8 bytes into a reversed 64-bit unsigned integer.
 inline uint64_t convert_bytes(const uint8_t *data)
 {
     uint64_t x = 0;

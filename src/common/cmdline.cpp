@@ -46,6 +46,11 @@ public:
         return m_vm.count(name) ? m_vm[name].as<string>() : defval;
     }
 
+    void get_strv(const string &name, vector<string> &v) {
+        if (m_vm.count(name))
+            v = m_vm[name].as<vector<string> >();
+    }
+
     long get_long(const string &name, long defval) {
         return m_vm.count(name) ? m_vm[name].as<long>() : defval;
     }
@@ -69,6 +74,9 @@ bool cmdline::cmdline_impl::parse(int argc, char *argv[])
             break;
         case CL_STR:
             m_desc.add_options()(opt->name, po::value<string>(), opt->desc);
+            break;
+        case CL_STRV:
+            m_desc.add_options()(opt->name, po::value<vector<string> >(), opt->desc);
             break;
         case CL_LONG:
             m_desc.add_options()(opt->name, po::value<long>(), opt->desc);
@@ -129,6 +137,14 @@ bool cmdline::get_flag(const string &name)
 string cmdline::get_str(const string &name, const string &defval)
 {
     return m_pimpl->get_str(name, defval);
+}
+
+// -----------------------------------------------------------------------------
+vector<string> cmdline::get_strv(const string &name)
+{
+    vector<string> output;
+    m_pimpl->get_strv(name, output);
+    return output;
 }
 
 // -----------------------------------------------------------------------------

@@ -18,6 +18,7 @@
 #define AGILENT_READER__H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define DATE_TIME_STRING_LENGTH 16
 #define FRAME_STRING_LENGTH     24
@@ -91,6 +92,8 @@ int ReadWaveformDataHeader(FILE *fp, tPBWaveformDataHeader *header);
 unsigned char *ReadLogicWaveform(FILE *fp, const tPBWaveformHeader *header);
 
 float *ReadAnalogWaveform(FILE *fp, const tPBWaveformHeader *header, ePBDataType *type);
+
+void DestroyAnalogWaveform(float *pWaveformData);
 
 int *ReadHistogramWaveform(FILE *fp, const tPBWaveformHeader *header);
 

@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <iostream>
 #include <string>
 #include <cstdio>
 #include "cmdline.h"
@@ -53,11 +52,8 @@ int main(int argc, char *argv[])
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
         { CL_STR,  "key,k",        "specify the 16 byte DES key to expand" },
-        { CL_STR,  "plaintext,p",  "specify a 16 byte plaintext block" },
-        { CL_STR,  "ciphertext,c", "specify a 16 byte ciphertext block" },
-        { CL_FLAG, "format-cpp",   "display data as C/C++ array" },
-        { CL_FLAG, "format-vhdl",  "display data as VHDL array" },
-        { CL_FLAG, "format-v",     "display data as Verilog array" },
+        { CL_STRV, "plaintext,p",  "specify a 16 byte plaintext block" },
+        { CL_STRV, "ciphertext,c", "specify a 16 byte ciphertext block" },
         { CL_FLAG, "dec",          "display data in base 10" },
         { CL_FLAG, "help,h",       "display this usage message" },
         { CL_TERM, 0, 0 }
@@ -80,9 +76,9 @@ int main(int argc, char *argv[])
     des::key_schedule(ek, sk);
     print_keys(sk, cl.get_flag("dec"));
 
-    if (cl.count("plaintext")) {
+    foreach (const string &plaintext, cl.get_strv("plaintext")) {
         // parse the plaintext and perform encryption
-        uint64_t pt = atob_be(cl.get_str("plaintext"));
+        uint64_t pt = atob_be(plaintext);
         uint64_t ct = des::encrypt(pt, sk);
 
         // retreive and display the encrypted ciphertext and inputs
@@ -91,9 +87,9 @@ int main(int argc, char *argv[])
                (long long)util::rev64(ct));
     }
 
-    if (cl.count("ciphertext")) {
+    foreach (const string &ciphertext, cl.get_strv("ciphertext")) {
         // parse the ciphertext and perform decryption
-        uint64_t ct = atob_be(cl.get_str("ciphertext"));
+        uint64_t ct = atob_be(ciphertext);
         uint64_t pt = des::decrypt(ct, sk);
 
         // retreive and display the decrypted plaintext and inputs

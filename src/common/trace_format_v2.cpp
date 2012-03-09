@@ -1,0 +1,121 @@
+// dpa framework - a collection of tools for differential power analysis
+// Copyright (C) 2011  Garrett C. Smith
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#include <vector>
+#include <fstream>
+#include <cstdlib>
+#include <cassert>
+#include "trace_format_v2.h"
+
+using namespace std;
+
+// -----------------------------------------------------------------------------
+bool trace_reader_v2::open(const string &path, const string &key, bool ct)
+{
+    // get the full list of binary files located in the input directory
+    util::pathlist paths;
+    util::scan_directory(path, ".csv", paths);
+
+    // cull the list down to traces matching the specified key
+    const string search("k=" + key);
+    for (util::pathlist::iterator i = paths.begin(); i != paths.end(); ++i) {
+        if (string::npos != i->find(search))
+            m_paths.push_back(*i);
+    }
+
+    if (!m_paths.size()) {
+        fprintf(stderr, "no trace files found matching specified key\n");
+        return false;
+    }
+
+    // select search string based on whether we want plaintext or ciphertext
+    m_search = ct ? "c=" : "m=";
+    m_current = 0;
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+void trace_reader_v2::close()
+{
+    m_paths.clear();
+    m_current = 0;
+}
+
+// -----------------------------------------------------------------------------
+bool trace_reader_v2::read(trace &pt, const trace::time_range &range)
+{
+    if (m_current >= m_paths.size())
+        return false;
+
+    const string path(m_paths[m_current++]);
+    const string msg_str(path.substr(path.find(m_search) + 2, 32));
+
+    vector<uint8_t> text(16);
+    if (!util::atob(msg_str, &text[0], 16)) {
+        fprintf(stderr, "invalid plain/ciphertext '%s'\n", msg_str.c_str());
+        return false;
+    }
+
+    pt.set_text(text);
+    pt.clear();
+
+    ifstream fin(path.c_str());
+    if (!fin.is_open()) {
+        fprintf(stderr, "unable to open %s for reading\n", path.c_str());
+        return false;
+    }
+
+    string line;
+    long sample_time = 0;
+    while (getline(fin, line)) {
+        // skip comments
+        if (line[0] == '#') continue;
+
+        // only record samples within the specified time range
+        sample_time++;
+        if (range.first && sample_time < range.first)
+            continue;
+        if (range.second && sample_time >= range.second)
+            break;
+
+        float value = (float)strtol(line.c_str(), NULL, 10);
+        pt.push_back(trace::sample(sample_time, value));
+        m_events.insert(sample_time);
+    }
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+bool trace_writer_v2::open(const string &path, const string &key)
+{
+    assert(!"not implemented");
+    return false;
+}
+
+// -----------------------------------------------------------------------------
+void trace_writer_v2::close()
+{
+    assert(!"not implemented");
+}
+
+// -----------------------------------------------------------------------------
+bool trace_writer_v2::write(const trace &pt)
+{
+    assert(!"not implemented");
+    return false;
+}
+

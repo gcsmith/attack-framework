@@ -54,44 +54,18 @@ bool check_inout_directories(const string &i_dir, const string &o_dir)
 // -----------------------------------------------------------------------------
 bool scan_directory(const string &in_path, const string &ext, pathlist &paths)
 {
-    fs::directory_iterator end;
-    for (fs::directory_iterator i(in_path); i != end; ++i) {
-        string name = i->string();
+    if (!fs::is_directory(in_path))
+        return false;
+
+    fs::directory_iterator begin(in_path), end;
+    foreach (fs::path path, make_pair(begin, end)) {
+        const string name(path.string());
         if (boost::ends_with(name, ext))
             paths.push_back(name);
     }
+
     sort(paths.begin(), paths.end());
     return true;
-}
-
-// -----------------------------------------------------------------------------
-bool parse_plaintext(const string &filename, uint8_t *bytes, size_t count)
-{
-    vector<string> tokens;
-    string str = fs::path(filename).stem();
-    boost::split(tokens, str, boost::is_any_of("_."));
-
-    if (count && (tokens.size() != count)) {
-        fprintf(stderr, "bad trace name %s: parsed %zu bytes, expected %zu\n",
-                filename.c_str(), tokens.size(), count);
-        return false;
-    }
-
-    for (size_t i = 0; i < tokens.size(); ++i)
-        bytes[i] = strtol(tokens[i].c_str(), NULL, 16);
-
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-string hexstring_to_filename(const string &str, size_t num_bytes)
-{
-    string o_name;
-    for (size_t j = 0; j < num_bytes; ++j) {
-        o_name += str.substr(j * 2, 2);
-        if (j != (num_bytes - 1)) o_name += "_";
-    }
-    return o_name;
 }
 
 // -----------------------------------------------------------------------------
@@ -108,6 +82,15 @@ bool atob(const string &str, uint8_t *bytes, size_t count)
 }
 
 // -----------------------------------------------------------------------------
+vector<uint8_t> atob(const string &str)
+{
+    vector<uint8_t> result;
+    for (size_t i = 0; i < (str.length() / 2); ++i)
+        result.push_back(strtol(str.substr(i * 2, 2).c_str(), NULL, 16));
+    return result;
+}
+
+// -----------------------------------------------------------------------------
 string btoa(const uint8_t *bytes, size_t count)
 {
     static const char *hex_tab = "0123456789ABCDEF";
@@ -117,6 +100,12 @@ string btoa(const uint8_t *bytes, size_t count)
         str += hex_tab[bytes[i] & 0xF];
     }
     return str;
+}
+
+// -----------------------------------------------------------------------------
+string btoa(const vector<uint8_t> &bytes)
+{
+    return btoa(&bytes[0], bytes.size());
 }
 
 // -----------------------------------------------------------------------------
@@ -138,10 +127,11 @@ string concat_name(const string &dir, const string &name, const string &ext)
 }
 
 // -----------------------------------------------------------------------------
-void split(vector<string> &tokens, const string &str, const string &delim)
+vector<string> split(const string &str, const string &delim)
 {
-    tokens.clear();
+    vector<string> tokens;
     boost::split(tokens, str, boost::is_any_of(delim));
+    return tokens;
 }
 
 // -----------------------------------------------------------------------------

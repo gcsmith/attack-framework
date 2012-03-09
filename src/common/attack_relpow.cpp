@@ -87,7 +87,7 @@ bool attack_relpow::setup(crypto_instance *crypto, const parameters &params)
 void attack_relpow::process(const time_map &tmap, const trace &pt)
 {
     const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.get_text());
+    m_crypto->set_message(pt.text());
 
     // compute the sensitive value of the entire 128-bit key
     int sensitive_value = 0;

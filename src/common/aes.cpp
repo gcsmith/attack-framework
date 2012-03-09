@@ -88,51 +88,51 @@ void key_schedule(uint8_t *sk, int rounds)
 }
 
 // -----------------------------------------------------------------------------
-void add_round_key(const uint8_t *s_in, uint8_t *s_out, const uint8_t *sk)
+void add_round_key(const uint8_t *in, uint8_t *out, const uint8_t *sk)
 {
     for (int i = 0; i < 16; ++i)
-        s_out[i]  = s_in[i] ^ sk[i];
+        out[i]  = in[i] ^ sk[i];
 }
 
 // -----------------------------------------------------------------------------
-void sub_bytes(const int *tab, const uint8_t *s_in, uint8_t *s_out)
+void sub_bytes(const int *tab, const uint8_t *in, uint8_t *out)
 {
     for (int i = 0; i < 16; ++i)
-        s_out[i] = tab[s_in[i]];
+        out[i] = tab[in[i]];
 }
 
 // -----------------------------------------------------------------------------
-void shift_rows(const uint8_t *s_in, uint8_t *s_out)
+void shift_rows(const uint8_t *in, uint8_t *out)
 {
     for (int i = 0; i < 16; ++i)
-        s_out[i] = s_in[shift[i]];
+        out[i] = in[shift[i]];
 }
 
 // -----------------------------------------------------------------------------
-void shift_rows_inv(const uint8_t *s_in, uint8_t *s_out)
+void shift_rows_inv(const uint8_t *in, uint8_t *out)
 {
     for (int i = 0; i < 16; ++i)
-        s_out[i] = s_in[shift_inv[i]];
+        out[i] = in[shift_inv[i]];
 }
 
 // -----------------------------------------------------------------------------
-void mix_columns(const uint8_t *s_in, uint8_t *s_out)
+void mix_columns(const uint8_t *in, uint8_t *out)
 {
-    for (int i = 0; i < 4; ++i, s_in += 4, s_out += 4) {
-        s_out[0] = _m2(s_in[0]) ^ _m3(s_in[1]) ^ _m1(s_in[2]) ^ _m1(s_in[3]);
-        s_out[1] = _m1(s_in[0]) ^ _m2(s_in[1]) ^ _m3(s_in[2]) ^ _m1(s_in[3]);
-        s_out[2] = _m1(s_in[0]) ^ _m1(s_in[1]) ^ _m2(s_in[2]) ^ _m3(s_in[3]);
-        s_out[3] = _m3(s_in[0]) ^ _m1(s_in[1]) ^ _m1(s_in[2]) ^ _m2(s_in[3]);
+    for (int i = 0; i < 4; ++i, in += 4, out += 4) {
+        out[0] = GF_2(in[0]) ^ GF_3(in[1]) ^ GF_1(in[2]) ^ GF_1(in[3]);
+        out[1] = GF_1(in[0]) ^ GF_2(in[1]) ^ GF_3(in[2]) ^ GF_1(in[3]);
+        out[2] = GF_1(in[0]) ^ GF_1(in[1]) ^ GF_2(in[2]) ^ GF_3(in[3]);
+        out[3] = GF_3(in[0]) ^ GF_1(in[1]) ^ GF_1(in[2]) ^ GF_2(in[3]);
     }
 }
 // -----------------------------------------------------------------------------
-void mix_columns_inv(const uint8_t *s_in, uint8_t *s_out)
+void mix_columns_inv(const uint8_t *in, uint8_t *out)
 {
-    for (int i = 0; i < 4; ++i, s_in += 4, s_out += 4) {
-        s_out[0] = _mE(s_in[0]) ^ _mB(s_in[1]) ^ _mD(s_in[2]) ^ _m9(s_in[3]);
-        s_out[1] = _m9(s_in[0]) ^ _mE(s_in[1]) ^ _mB(s_in[2]) ^ _mD(s_in[3]);
-        s_out[2] = _mD(s_in[0]) ^ _m9(s_in[1]) ^ _mE(s_in[2]) ^ _mB(s_in[3]);
-        s_out[3] = _mB(s_in[0]) ^ _mD(s_in[1]) ^ _m9(s_in[2]) ^ _mE(s_in[3]);
+    for (int i = 0; i < 4; ++i, in += 4, out += 4) {
+        out[0] = GF_E(in[0]) ^ GF_B(in[1]) ^ GF_D(in[2]) ^ GF_9(in[3]);
+        out[1] = GF_9(in[0]) ^ GF_E(in[1]) ^ GF_B(in[2]) ^ GF_D(in[3]);
+        out[2] = GF_D(in[0]) ^ GF_9(in[1]) ^ GF_E(in[2]) ^ GF_B(in[3]);
+        out[3] = GF_B(in[0]) ^ GF_D(in[1]) ^ GF_9(in[2]) ^ GF_E(in[3]);
     }
 }
 
@@ -142,11 +142,11 @@ void encrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
     uint8_t s0[16], *s1 = ct;
     add_round_key(pt, s0, sk);
 
-    for (int r = 1; r < 10; ++r) {
+    for (int round = 1; round < 10; ++round) {
         sub_bytes(sbox, s0, s1);
         shift_rows(s1, s0);
         mix_columns(s0, s1);
-        add_round_key(s1, s0, &sk[r * 16]);
+        add_round_key(s1, s0, &sk[round * 16]);
     }
 
     sub_bytes(sbox, s0, s1);
@@ -167,11 +167,11 @@ void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct, uint8_t m)
     // perform the rest of the encryption as usual
     add_round_key(pm, s0, sk);
 
-    for (int r = 1; r < 10; ++r) {
+    for (int round = 1; round < 10; ++round) {
         sub_bytes(mbox, s0, s1);
         shift_rows(s1, s0);
         mix_columns(s0, s1);
-        add_round_key(s1, s0, &sk[r * 16]);
+        add_round_key(s1, s0, &sk[round * 16]);
     }
 
     sub_bytes(mbox, s0, s1);
@@ -188,10 +188,10 @@ void decrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
     uint8_t s0[16], *s1 = ct;
     add_round_key(pt, s0, &sk[10 * 16]);
 
-    for (int r = 9; r > 0; --r) {
+    for (int round = 9; round > 0; --round) {
         shift_rows_inv(s0, s1);
         sub_bytes(sbox_inv, s1, s0);
-        add_round_key(s0, s1, &sk[r * 16]);
+        add_round_key(s0, s1, &sk[round * 16]);
         mix_columns_inv(s1, s0);
     }
 
@@ -213,10 +213,10 @@ void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt, uint8_t m)
     // perform the rest of the encryption as usual
     add_round_key(pm, s0, &sk[10 * 16]);
 
-    for (int r = 9; r > 0; --r) {
+    for (int round = 9; round > 0; --round) {
         shift_rows_inv(s0, s1);
         sub_bytes(mbox, s1, s0);
-        add_round_key(s0, s1, &sk[r * 16]);
+        add_round_key(s0, s1, &sk[round * 16]);
         mix_columns_inv(s1, s0);
     }
 

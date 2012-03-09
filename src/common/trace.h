@@ -22,19 +22,7 @@
 #include <string>
 #include <set>
 
-typedef std::set<long> event_set;
-typedef std::pair<long, long> time_range;
-
-struct sample
-{
-    sample() { }
-    sample(uint32_t _time, float _power) : time(_time), power(_power) { }
-
-    uint32_t time;
-    float power;
-};
-
-enum TraceBinFmt
+enum TraceBinFormat
 {
     FMT_PWR_S16,            // no time index, int16 sample
     FMT_PWR_F32,            // no time index, float32 sample
@@ -42,78 +30,69 @@ enum TraceBinFmt
     FMT_IDX_U32_PWR_F32,    // uint32 time index, float32 sample
 };
 
-class trace
-{
+class trace {
 public:
-    // TODO: description
-    trace() { }
+    typedef std::set<long> event_set;
+    typedef std::vector<long> event_list;
+    typedef std::pair<long, long> time_range;
 
-    // TODO: description
+    struct sample {
+        sample(void) { }
+        sample(uint32_t _time, float _power) : time(_time), power(_power) { }
+
+        uint32_t time;
+        float power;
+    };
+
+    /// default constructor - create width default size of 4096 samples
+    trace(void) : m_samples(4096) { }
+
+    /// create trace with specified number of samples
     trace(size_t n) : m_samples(n) { }
 
-    // TODO: description
+    // access a specific sample index
     const sample &operator[](size_t i) const { return m_samples[i]; }
 
-    // TODO: description
+    // access a specific sample index
     sample &operator[](size_t i) { return m_samples[i]; }
 
-    // TODO: description
+    // return the number of samples in this trace
+    size_t size(void) const { return m_samples.size(); }
+
+    // remove all samples from the trace
+    void clear(void) { m_samples.clear(); }
+
+    // set the maximum number of samples in this trace
     void resize(size_t n) { m_samples.resize(n); }
 
-    // TODO: description
-    size_t size() const { return m_samples.size(); }
+    // add a new sample to the trace
+    void push_back(const sample &data) { m_samples.push_back(data); }
 
-    // TODO: description
-    void set_text(const std::vector<uint8_t> &txt);
+    // set the plaintext or ciphertext value
+    void set_text(const std::vector<uint8_t> &data) { m_text = data; } 
 
-    // TODO: description
-    void set_text(const uint8_t *txt);
+    // get the plaintext or ciphertext value
+    const std::vector<uint8_t> &text(void) const { return m_text; }
 
-    // TODO: description
-    const std::vector<uint8_t> &get_text() const { return m_text; }
+    // set the sample binary format
+    void set_format(TraceBinFormat fmt) { m_format = fmt; }
 
-    // TODO: description
-    bool read_out(const std::string &i_path, const time_range &tr, event_set &ts);
+    // get the sample binary format
+    TraceBinFormat format(void) const { return m_format; }
 
-    // TODO: description
-    bool write_out(const std::string &o_path) const;
-
-    // TODO: description
-    bool read_agilent(const std::string &i_path, const time_range &tr);
-
-    // TODO: description
-    bool write_agilent(const std::string &o_path);
-
-    // TODO: description
-    bool read_csv(const std::string &i_path, const time_range &tr);
-
-    // TODO: description
-    bool write_csv(const std::string &o_path) const;
-
-    // TODO: description
-    bool read_bin(const std::string &i_path);
-
-    // TODO: description
-    bool write_bin(const std::string &o_path, TraceBinFmt fmt) const;
-
-    // TODO: description
-    void merge_events(event_set &events) const;
-
-    // TODO: description
+    // Expand trace to cover the specified list of sample events.
     void sample_and_hold(const trace &pt, const std::vector<long> &times);
 
-    // TODO: description
-    static bool read_profile(const std::string &i_path, std::vector<long> &ts);
+    // Read in the trace timing profile (ordered list of event indices).
+    static bool read_profile(const std::string &i_path, event_list &evt);
 
-    // TODO: description
-    static bool write_profile(const std::string &o_path, const event_set &ts);
-
-    // TODO: description
-    static bool write_profile(const std::string &o_path, int start, int end);
+    // Write out the trace timing profile (ordered list of event indices).
+    static bool write_profile(const std::string &o_path, const event_set &evt);
 
 protected:
-    std::vector<sample> m_samples;
+    std::vector<sample>  m_samples;
     std::vector<uint8_t> m_text;
+    TraceBinFormat       m_format;
 };
 
 #endif // TRACE__H

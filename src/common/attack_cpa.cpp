@@ -24,8 +24,7 @@ using namespace util;
 
 // -----------------------------------------------------------------------------
 template <typename real>
-class attack_cpa: public attack_instance
-{
+class attack_cpa: public attack_instance {
 public:
     attack_cpa();
     virtual ~attack_cpa();
@@ -99,8 +98,10 @@ bool attack_cpa<real>::setup(crypto_instance *crypto, const parameters &params)
         !params.get("num_reports", m_nreports) ||
         !params.get("byte", m_byte) ||
         !params.get("offset", m_offset) ||
-        !params.get("bits", m_bits))
+        !params.get("bits", m_bits)) {
+        fprintf(stderr, "missing parameters in attack_cpa\n");
         return false;
+    }
 
     m_mask = 0;
     for (unsigned int i = m_offset; i < (m_offset + m_bits); ++i)
@@ -127,7 +128,7 @@ template <typename real>
 void attack_cpa<real>::process(const time_map &tmap, const trace &pt)
 {
     const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.get_text());
+    m_crypto->set_message(pt.text());
 
     // accumulate power and power^2 for each sample
     for (size_t s = 0; s < num_samples; ++s) {

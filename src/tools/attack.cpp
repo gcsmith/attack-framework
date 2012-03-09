@@ -25,13 +25,14 @@ int main(int argc, char *argv[])
     // build and parse the table of command line arguments
     static const string usage_message = "attack [options]";
     static const cmdline_option cmdline_args[] = {
-        { CL_STR,  "input-dir,i",  "specify the trace input directory" },
+        { CL_STR,  "src-fmt,s",    "specify the trace source format" },
+        { CL_STR,  "input-path,i", "specify the trace input path" },
         { CL_STR,  "output-dir,o", "specify the results output directory" },
         { CL_STR,  "attack,a",     "attack algorithm name" },
         { CL_STR,  "crypto,c",     "cryptographic function name" },
-        { CL_LONG, "num-traces,t", "maximum number of traces to process" },
+        { CL_LONG, "num-traces,n", "maximum number of traces to process" },
+        { CL_FLAG, "ciphertext",   "use ciphertext rather than plaintext" },
         { CL_STR,  "params,p",     "specify attack specific parameters" },
-        { CL_STR,  "order,O",      "specify a trace order file" },
         { CL_STR,  "profile,P",    "specify the timing profile" },
         { CL_LONG, "report,r",     "generate report every N traces" },
         { CL_LONG, "threads",      "number of worker threads to run" },
@@ -48,34 +49,48 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    attack_engine at;
-
     // parse each command line argument from the variable map
     if (cl.count("list")) {
         attack_manager::list(stdout);
         return 0;
     }
 
-    if (!at.set_paths(cl.get_str("input-dir", "trace_bin"),
-                      cl.get_str("output-dir", "attack_results")))
+    if (!cl.count("attack") || !cl.count("crypto")) {
+        fprintf(stderr, "must specify an attack method and crypto type\n");
+        return 1;
+    }
+
+    // parse each command line argument from the variable map
+    string src_fmt  = cl.get_str("src-fmt", "packed");
+    string in_path  = cl.get_str("input-path", "trace_input_path");
+    string out_path = cl.get_str("output-dir", "attack_results");
+    string profile  = cl.get_str("profile", "timing_profile.txt");
+    int num_threads = cl.get_long("threads", 1);
+    int num_traces  = cl.get_long("num-traces", 0);
+    int report_int  = cl.get_long("report", 1000);
+    bool ciphertext = cl.get_flag("ciphertext");
+
+    // allocate the reader object given the specified trace input format
+    auto_ptr<trace_reader> pReader(trace_reader::create(src_fmt));
+    if (!pReader.get() || !pReader->open(in_path, "", ciphertext))
         return 1;
 
-    if (cl.count("attack"))
-        at.set_attack(cl.get_str("attack"));
-    if (cl.count("crypto"))
-        at.set_crypto(cl.get_str("crypto"));
-    if (cl.count("params"))
-        at.set_params(cl.get_str("params"));
-    if (cl.count("prefix"))
-        at.set_results_prefix(cl.get_str("prefix"));
-    if (cl.count("threads"))
-        at.set_thread_count(cl.get_long("threads"));
+    // initialize and run the attack engine
+    attack_engine engine;
+    engine.set_reader(pReader.get());
+    engine.set_attack(cl.get_str("attack"));
+    engine.set_crypto(cl.get_str("crypto"));
+    engine.set_params(cl.get_str("params"));
+    engine.set_results_prefix(cl.get_str("prefix"));
+    engine.set_thread_count(num_threads);
+    engine.set_num_traces(num_traces);
+    engine.set_report_interval(report_int);
 
-    at.set_num_traces(cl.get_long("num-traces", 0));
-    at.set_report_interval(cl.get_long("report", 1000));
-    at.load_trace_order(cl.get_str("order", "trace_order.txt"));
-    at.load_trace_profile(cl.get_str("profile", "trace_profile.txt"));
+    if (!engine.load_trace_profile(profile)) {
+        fprintf(stderr, "failed to load timing profile\n");
+        return 1;
+    }
 
-    return at.run();
+    return engine.run(out_path);
 }
 

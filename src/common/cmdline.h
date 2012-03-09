@@ -18,27 +18,26 @@
 #define CMDLINE__H
 
 #include <string>
+#include <vector>
 
 // description
-enum cmdline_argtype
-{
+enum cmdline_argtype {
     CL_TERM,
     CL_FLAG,
     CL_STR,
+    CL_STRV,
     CL_LONG,
 };
 
 // description
-struct cmdline_option
-{
+struct cmdline_option {
     cmdline_argtype type;
     const char *name;
     const char *desc;
 };
 
 // description
-class cmdline
-{
+class cmdline {
 public:
     // description
     cmdline(const cmdline_option *args, const std::string &usage);
@@ -53,10 +52,13 @@ public:
     size_t count(const std::string &name);
 
     // description
-    void print_usage();
+    void print_usage(void);
 
     // description
     std::string get_str(const std::string &name, const std::string &defval = "");
+
+    // description
+    std::vector<std::string> get_strv(const std::string &name);
 
     // description
     long get_long(const std::string &name, long defval = 0);

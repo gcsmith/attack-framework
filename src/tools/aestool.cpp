@@ -16,9 +16,9 @@
 
 #include <string>
 #include <cstdio>
-#include "aes.h"
 #include "cmdline.h"
 #include "utility.h"
+#include "aes.h"
 
 using namespace std;
 
@@ -61,8 +61,8 @@ int main(int argc, char *argv[])
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
         { CL_STR,  "key,k",        "specify the 16 byte AES128 key to expand" },
-        { CL_STR,  "plaintext,p",  "specify a 16 byte plaintext block" },
-        { CL_STR,  "ciphertext,c", "specify a 16 byte ciphertext block" },
+        { CL_STRV, "plaintext,p",  "specify a 16 byte plaintext block" },
+        { CL_STRV, "ciphertext,c", "specify a 16 byte ciphertext block" },
         { CL_STR,  "mask,m",       "specify an 8-bit mask" },
         { CL_FLAG, "format-cpp",   "display data as C/C++ array" },
         { CL_FLAG, "format-vhdl",  "display data as VHDL array" },
@@ -112,9 +112,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (cl.count("plaintext")) {
+    foreach (const string &pt, cl.get_strv("plaintext")) {
         // parse the plaintext and perform encryption
-        const string pt = cl.get_str("plaintext");
         if (!util::atob(pt, msg_in, 16)) {
             fprintf(stderr, "invalid plaintext specified. exiting\n");
             return 1;
@@ -130,9 +129,8 @@ int main(int argc, char *argv[])
         printf("enc: pt=%s ek=%s ct=%s\n", pt.c_str(), ek.c_str(), ct.c_str());
     }
 
-    if (cl.count("ciphertext")) {
+    foreach (const string &ct, cl.get_strv("ciphertext")) {
         // parse the ciphertext and perform decryption
-        const string ct = cl.get_str("ciphertext");
         if (!util::atob(ct, msg_in, 16)) {
             fprintf(stderr, "invalid ciphertext specified. exiting\n");
             return 1;
