@@ -7,7 +7,7 @@
 project(common_libs)
 
 find_package(Boost 1.46.1 COMPONENTS filesystem program_options system thread)
-find_package(Sqlite3 REQUIRED)
+find_package(Sqlite3)
 
 include_directories(
     ${Boost_INCLUDE_DIRS}
