@@ -21,8 +21,7 @@
 using namespace std;
 namespace po = boost::program_options;
 
-class cmdline::cmdline_impl
-{
+class cmdline::cmdline_impl {
 public:
     cmdline_impl(const cmdline_option *args, const string &usage)
     : m_usage(usage), m_desc("Options"), m_args(args) { }

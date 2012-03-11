@@ -21,10 +21,8 @@
 #include "trace_format_v2.h"
 #include "trace_format_v3.h"
 
-using namespace std;
-
 // -----------------------------------------------------------------------------
-trace_reader *trace_reader::create(const string &format)
+trace_reader *trace_reader::create(const std::string &format)
 {
     if (format == "out")
         return new trace_reader_out();
@@ -45,7 +43,7 @@ trace_reader *trace_reader::create(const string &format)
 }
 
 // -----------------------------------------------------------------------------
-trace_writer *trace_writer::create(const string &format)
+trace_writer *trace_writer::create(const std::string &format)
 {
     if (format == "out")
         return new trace_writer_out();

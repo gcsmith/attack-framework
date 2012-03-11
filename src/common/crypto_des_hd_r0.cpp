@@ -18,14 +18,13 @@
 #include "des.h"
 #include "utility.h"
 
-class crypto_des_hd_r0: public crypto_instance
-{
+class crypto_des_hd_r0: public crypto_instance {
     uint64_t m_bits;
     std::vector<int> m_key;
 
 public:
-    virtual void set_message(const std::vector<uint8_t> &msg);
-    virtual void set_key(const std::vector<uint8_t> &key);
+    virtual bool set_message(const std::vector<uint8_t> &msg);
+    virtual bool set_key(const std::vector<uint8_t> &key);
     virtual int extract_estimate(int k);
     virtual int compute(int n, int k);
     virtual int key_bits()      { return 48; }
@@ -34,19 +33,25 @@ public:
 };
 
 // -----------------------------------------------------------------------------
-void crypto_des_hd_r0::set_message(const std::vector<uint8_t> &msg)
+bool crypto_des_hd_r0::set_message(const std::vector<uint8_t> &msg)
 {
+    if (msg.size() != 8) {
+        fprintf(stderr, "expected 8-byte text, got %d\n", (int)msg.size());
+        return false;
+    }
     m_bits = util::convert_bytes(&msg[0]);
+    return true;
 }
 
 // -----------------------------------------------------------------------------
-void crypto_des_hd_r0::set_key(const std::vector<uint8_t> &key)
+bool crypto_des_hd_r0::set_key(const std::vector<uint8_t> &key)
 {
     m_key.resize(8);
     for (int i = 0; i < 8; ++i) {
         int byte = (util::convert_bytes(&key[0]) >> (i * 6)) & 0x3F;
         m_key[i] = util::revb(byte, 6);
     }
+    return true;
 }
 
 // -----------------------------------------------------------------------------

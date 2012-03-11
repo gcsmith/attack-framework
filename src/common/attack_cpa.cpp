@@ -110,8 +110,9 @@ bool attack_cpa<real>::setup(crypto_instance *crypto, const parameters &params)
     m_crypto = crypto;
     m_guesses = 1 << m_crypto->estimate_bits();
     m_center = m_bits >> 1;
-
     m_traces = 0;
+
+    // allocate storage for intermediate results in advance
     m_t1.resize(m_nevents, 0);
     m_t2.resize(m_nevents, 0);
     m_w1.resize(m_guesses, 0);
@@ -127,11 +128,8 @@ bool attack_cpa<real>::setup(crypto_instance *crypto, const parameters &params)
 template <typename real>
 void attack_cpa<real>::process(const time_map &tmap, const trace &pt)
 {
-    const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.text());
-
     // accumulate power and power^2 for each sample
-    for (size_t s = 0; s < num_samples; ++s) {
+    for (size_t s = 0; s < pt.size(); ++s) {
         m_t1[tmap[s]] += pt[s].power;
         m_t2[tmap[s]] += pt[s].power * pt[s].power;
     }
@@ -145,7 +143,7 @@ void attack_cpa<real>::process(const time_map &tmap, const trace &pt)
             m_w1[k] += fw;
             m_w2[k] += fw * fw;
 
-            for (size_t s = 0; s < num_samples; ++s)
+            for (size_t s = 0; s < pt.size(); ++s)
                 tw[tmap[s]] += pt[s].power * fw;
         }
     }

@@ -24,6 +24,8 @@ using namespace std;
 // -----------------------------------------------------------------------------
 bool trace_reader_v1::open(const string &path, const string &key, bool ct)
 {
+    close();
+
     // get the full list of binary files located in the input directory
     util::pathlist paths;
     util::scan_directory(path, ".bin", paths);
@@ -46,6 +48,7 @@ bool trace_reader_v1::open(const string &path, const string &key, bool ct)
 // -----------------------------------------------------------------------------
 void trace_reader_v1::close()
 {
+    m_events.clear();
     m_paths.clear();
 }
 
@@ -58,12 +61,8 @@ bool trace_reader_v1::read(trace &pt, const trace::time_range &range)
     const string path(m_paths[m_current++]);
     const string msg_str(path.substr(path.find(m_search) + 2, 16));
 
-    vector<uint8_t> text(8);
-    if (!util::atob(msg_str, &text[0], 8))
-        return false;
-
-    pt.set_text(text);
     pt.clear();
+    pt.set_text(util::atob(msg_str));
 
     FILE *fp = fopen(path.c_str(), "rb");
     if (NULL == fp) {

@@ -24,8 +24,7 @@ using namespace util;
 
 // -----------------------------------------------------------------------------
 template <typename real>
-class attack_dpa: public attack_instance
-{
+class attack_dpa: public attack_instance {
 public:
     attack_dpa();
     ~attack_dpa();
@@ -116,9 +115,6 @@ bool attack_dpa<real>::setup(crypto_instance *crypto, const parameters &params)
 template <typename real>
 void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
 {
-    const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.text());
-
     for (int k = 0; k < m_guesses; ++k) {
         const unsigned int target = m_crypto->compute(m_byte, k);
         const unsigned int weight = crypto::popcnt[target & m_mask];
@@ -133,7 +129,7 @@ void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
         if (select >= 2) continue;
 
         real *d = &m_diffs[(k * 2 + select) * m_nevents];
-        for (size_t s = 0; s < num_samples; ++s)
+        for (size_t s = 0; s < pt.size(); ++s)
             d[tmap[s]] += pt[s].power;
     }
 }

@@ -23,8 +23,7 @@ using namespace std;
 using namespace util;
 
 // -----------------------------------------------------------------------------
-class attack_pscc: public attack_instance
-{
+class attack_pscc: public attack_instance {
     typedef float real;
 
 public:
@@ -96,9 +95,6 @@ bool attack_pscc::setup(crypto_instance *crypto, const parameters &params)
 // -----------------------------------------------------------------------------
 void attack_pscc::process(const time_map &tmap, const trace &pt)
 {
-    const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.text());
-
     // accumulate weight and weight^2 of the sensitive value
     real weight = 0;
     for (int i = m_offset; i < (m_offset + m_bytes); ++i) {
@@ -110,7 +106,7 @@ void attack_pscc::process(const time_map &tmap, const trace &pt)
     m_w2 += weight * weight;
 
     // accumulate power, power^2, and power*weight for each sample
-    for (size_t s = 0; s < num_samples; ++s) {
+    for (size_t s = 0; s < pt.size(); ++s) {
         m_p1[tmap[s]] += pt[s].power;
         m_p2[tmap[s]] += pt[s].power * pt[s].power;
         m_pw[tmap[s]] += pt[s].power * weight;

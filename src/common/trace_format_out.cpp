@@ -25,14 +25,14 @@ using namespace std;
 bool trace_reader_out::open(const string &path, const string &key, bool ct)
 {
     // get the full list of .out files located in the input directory
-    util::scan_directory(path, ".out", m_paths);
-    m_current = 0;
-    return true;
+    close();
+    return util::scan_directory(path, ".out", m_paths);
 }
 
 // -----------------------------------------------------------------------------
 void trace_reader_out::close()
 {
+    m_events.clear();
     m_paths.clear();
     m_current = 0;
 }
@@ -46,16 +46,6 @@ bool trace_reader_out::read(trace &pt, const trace::time_range &range)
     const string path(m_paths[m_current++]);
     const string name(util::base_name(path));
 
-    // parse and validate the plain/ciphertext from the trace filename
-    vector<uint8_t> text;
-    foreach (const string &token, util::split(name, "_."))
-        text.push_back(strtol(token.c_str(), NULL, 16));
-
-    if (text.size() != 16) {
-        fprintf(stderr, "invalid plain/ciphertext '%s'\n", name.c_str());
-        return false;
-    }
-
     // attempt to open and parse the trace file
     ifstream fin(path.c_str());
     if (!fin.is_open()) {
@@ -63,8 +53,14 @@ bool trace_reader_out::read(trace &pt, const trace::time_range &range)
         return false;
     }
 
-    pt.set_text(text);
+    // parse the plain/ciphertext from the trace filename
+    vector<uint8_t> text;
+    foreach (const string &token, util::split(name, "_."))
+        text.push_back(strtol(token.c_str(), NULL, 16));
+
     pt.clear();
+    pt.set_text(text);
+    pt.set_format(trace::FMT_IDX_U32_PWR_F32);
 
     string line;
     while (getline(fin, line)) {

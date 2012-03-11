@@ -73,6 +73,7 @@ bool trace_reader_sqlite::read(trace &pt, const trace::time_range &range)
     const char *msg = (const char *)sqlite3_column_text(m_stmt, 1);
     const float *wav = (const float *)sqlite3_column_blob(m_stmt, 2);
 
+    pt.clear();
     pt.set_text(util::atob(msg));
 
     // construct the power trace for the sample blob
@@ -82,7 +83,6 @@ bool trace_reader_sqlite::read(trace &pt, const trace::time_range &range)
         return false;
     }
 
-    pt.clear();
     for (int i = 0; i < (num_samples >> 2); ++i) {
         if (range.first && i < range.first)
             continue;

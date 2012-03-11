@@ -23,15 +23,12 @@
 
 typedef std::vector<long> time_map;
 
-struct crypto_instance
-{
-    virtual ~crypto_instance() {}
-
+struct crypto_instance {
     /// Set the current message block (plaintext or ciphertext).
-    virtual void set_message(const std::vector<uint8_t> &msg) = 0;
+    virtual bool set_message(const std::vector<uint8_t> &msg) = 0;
 
     /// Set the known encryption key (for use in power profiling).
-    virtual void set_key(const std::vector<uint8_t> &key) = 0;
+    virtual bool set_key(const std::vector<uint8_t> &key) = 0;
 
     /// Given a known encryption key, extract estimate partition index k.
     virtual int extract_estimate(int k) = 0;
@@ -47,12 +44,12 @@ struct crypto_instance
 
     /// Return the size of the attack target (sensitive value) in bits.
     virtual int target_bits() = 0;
+
+    // Explicit virtual destructor, as crypto_instance will be subclassed
+    virtual ~crypto_instance() {}
 };
 
-struct attack_instance
-{
-    virtual ~attack_instance() {}
-
+struct attack_instance {
     /// Process attack parameters and perform pre-attack initialization.
     virtual bool setup(crypto_instance *crypto, const util::parameters &params) = 0;
 
@@ -76,10 +73,12 @@ struct attack_instance
 
     /// TODO: description
     virtual void get_group(std::vector<size_t> &group, int &ngroups) = 0;
+
+    // Explicit virtual destructor, as attack_instance will be subclassed
+    virtual ~attack_instance() {}
 };
 
-namespace attack_manager
-{
+namespace attack_manager {
     typedef attack_instance *(*create_attack_fn)(void);
     typedef crypto_instance *(*create_crypto_fn)(void);
 

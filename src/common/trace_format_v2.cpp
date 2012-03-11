@@ -63,20 +63,14 @@ bool trace_reader_v2::read(trace &pt, const trace::time_range &range)
     const string path(m_paths[m_current++]);
     const string msg_str(path.substr(path.find(m_search) + 2, 32));
 
-    vector<uint8_t> text(16);
-    if (!util::atob(msg_str, &text[0], 16)) {
-        fprintf(stderr, "invalid plain/ciphertext '%s'\n", msg_str.c_str());
-        return false;
-    }
-
     ifstream fin(path.c_str());
     if (!fin.is_open()) {
         fprintf(stderr, "unable to open %s for reading\n", path.c_str());
         return false;
     }
 
-    pt.set_text(text);
     pt.clear();
+    pt.set_text(util::atob(msg_str));
 
     string line;
     long sample_time = 0;

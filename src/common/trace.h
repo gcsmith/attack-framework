@@ -22,19 +22,18 @@
 #include <string>
 #include <set>
 
-enum TraceBinFormat
-{
-    FMT_PWR_S16,            // no time index, int16 sample
-    FMT_PWR_F32,            // no time index, float32 sample
-    FMT_IDX_U32_PWR_S16,    // uint32 time index, int16 sample
-    FMT_IDX_U32_PWR_F32,    // uint32 time index, float32 sample
-};
-
 class trace {
 public:
     typedef std::set<long> event_set;
     typedef std::vector<long> event_list;
     typedef std::pair<long, long> time_range;
+
+    enum TraceBinFormat {
+        FMT_PWR_S16,            // no time index, int16 sample
+        FMT_PWR_F32,            // no time index, float32 sample
+        FMT_IDX_U32_PWR_S16,    // uint32 time index, int16 sample
+        FMT_IDX_U32_PWR_F32,    // uint32 time index, float32 sample
+    };
 
     struct sample {
         sample(void) { }

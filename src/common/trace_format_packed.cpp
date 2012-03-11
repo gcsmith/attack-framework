@@ -22,6 +22,8 @@ using namespace std;
 // -----------------------------------------------------------------------------
 bool trace_reader_packed::open(const string &path, const string &key, bool ct)
 {
+    close();
+
     // attempt to open the trace archive for reading in binary mode
     m_input.open(path.c_str(), ios::binary);
     if (!m_input.is_open()) {
@@ -45,7 +47,9 @@ bool trace_reader_packed::open(const string &path, const string &key, bool ct)
 // -----------------------------------------------------------------------------
 void trace_reader_packed::close(void)
 {
-    m_input.close();
+    m_events.clear();
+    if (m_input.is_open())
+        m_input.close();
 }
 
 // -----------------------------------------------------------------------------
@@ -59,10 +63,10 @@ bool trace_reader_packed::read(trace &pt, const trace::time_range &range)
     m_input.read((char *)&num_samples, sizeof(uint32_t));
     m_input.read((char *)&text[0], 16);
 
+    pt.clear();
     pt.set_text(text);
 
     // set the trace size and load in the sample data
-    pt.clear();
     for (uint32_t i = 0; i < num_samples; ++i) {
         m_input.read((char *)&data.time, sizeof(uint32_t));
         m_input.read((char *)&data.power, sizeof(float));

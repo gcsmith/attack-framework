@@ -26,8 +26,7 @@ using namespace std;
 using namespace util;
 
 // -----------------------------------------------------------------------------
-class attack_thread
-{
+class attack_thread {
 public:
     attack_thread(int id, attack_engine *engine);
     ~attack_thread(void);
@@ -80,8 +79,17 @@ void attack_thread::run(void)
     trace pt(4096);
     vector<long> mapper;
 
-    while (m_engine->next_trace(m_id, mapper, pt))
+    while (m_engine->next_trace(m_id, mapper, pt)) {
+        // provide the next plaintext/ciphertext to the crypto instance
+        if (!m_crypto->set_message(pt.text())) {
+            fprintf(stderr, "[%d] invalid plain/ciphertext specified: %s\n",
+                    m_id, btoa(pt.text()).c_str());
+            return;
+        }
+
+        // run the attack algorithm on the next set of samples
         m_attack->process(mapper, pt);
+    }
 }
 
 // -----------------------------------------------------------------------------

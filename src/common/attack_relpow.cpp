@@ -23,8 +23,7 @@ using namespace std;
 using namespace util;
 
 // -----------------------------------------------------------------------------
-class attack_relpow: public attack_instance
-{
+class attack_relpow: public attack_instance {
 public:
     attack_relpow();
     ~attack_relpow();
@@ -86,9 +85,6 @@ bool attack_relpow::setup(crypto_instance *crypto, const parameters &params)
 // -----------------------------------------------------------------------------
 void attack_relpow::process(const time_map &tmap, const trace &pt)
 {
-    const size_t num_samples = pt.size();
-    m_crypto->set_message(pt.text());
-
     // compute the sensitive value of the entire 128-bit key
     int sensitive_value = 0;
     for (int i = m_offset; i < (m_offset + m_bytes); ++i) {
@@ -98,7 +94,7 @@ void attack_relpow::process(const time_map &tmap, const trace &pt)
 
     // compute the maximum/peak power consumption across the samples
     float power = 0.0;
-    for (size_t s = 0; s < num_samples; ++s)
+    for (size_t s = 0; s < pt.size(); ++s)
         power = max(power, pt[s].power);
 
     m_pow[sensitive_value] += power;

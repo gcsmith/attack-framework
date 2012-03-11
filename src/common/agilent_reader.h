@@ -24,8 +24,7 @@
 #define FRAME_STRING_LENGTH     24
 #define SIGNAL_STRING_LENGTH    16
  
-typedef enum
-{
+typedef enum {
     PB_UNKNOWN,
     PB_NORMAL,
     PB_PEAK_DETECT,
@@ -35,8 +34,7 @@ typedef enum
     PB_LOGIC
 } ePBWaveformType;
 
-typedef enum
-{
+typedef enum {
     PB_DATA_UNKNOWN,
     PB_DATA_NORMAL,
     PB_DATA_MAX,
@@ -46,16 +44,14 @@ typedef enum
     PB_DATA_LOGIC
 } ePBDataType;
 
-typedef struct
-{
+typedef struct {
     uint8_t Cookie[2];
     uint8_t Version[2];
     int32_t FileSize;
     int32_t NumberOfWaveforms;
 } tPBFileHeader;
 
-typedef struct
-{
+typedef struct {
     int32_t  HeaderSize;
     int32_t  WaveformType;
     int32_t  NWaveformBuffers;
@@ -75,26 +71,32 @@ typedef struct
     uint32_t SegmentIndex;
 } tPBWaveformHeader;
 
-typedef struct
-{
+typedef struct {
     int32_t HeaderSize;
     int16_t BufferType;
     int16_t BytesPerPoint;
     int32_t BufferSize;
 } tPBWaveformDataHeader;
 
+// TODO: description
 int ReadAgilentHeader(FILE *fp, tPBFileHeader *hdr);
 
+// TODO: description
 int ReadWaveformHeader(FILE *fp, tPBWaveformHeader *header);
 
+// TODO: description
 int ReadWaveformDataHeader(FILE *fp, tPBWaveformDataHeader *header);
 
+// TODO: description
 unsigned char *ReadLogicWaveform(FILE *fp, const tPBWaveformHeader *header);
 
+// TODO: description
 float *ReadAnalogWaveform(FILE *fp, const tPBWaveformHeader *header, ePBDataType *type);
 
+// TODO: description
 void DestroyAnalogWaveform(float *pWaveformData);
 
+// TODO: description
 int *ReadHistogramWaveform(FILE *fp, const tPBWaveformHeader *header);
 
 #endif // AGILENT_READER__H

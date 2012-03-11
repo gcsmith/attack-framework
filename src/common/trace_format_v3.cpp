@@ -37,9 +37,9 @@ size_t parse_data(const string &input, vector<T> &data, int base)
 // -----------------------------------------------------------------------------
 bool trace_reader_v3::open(const string &path, const string &key, bool ct)
 {
-    string file_name = ct ? "text_out.txt" : "text_in.txt";
-    string text_path = util::concat_name(path, file_name);
-    string wave_path = util::concat_name(path, "wave.txt");
+    const string file_name = ct ? "text_out.txt" : "text_in.txt";
+    const string text_path = util::concat_name(path, file_name);
+    const string wave_path = util::concat_name(path, "wave.txt");
 
     ifstream text_in(text_path.c_str());
     if (!text_in.is_open()) {
@@ -48,9 +48,8 @@ bool trace_reader_v3::open(const string &path, const string &key, bool ct)
     }
 
     text_t text;
-    while (getline(text_in, m_line) && 16 == parse_data(m_line, text, 16)) {
+    while (getline(text_in, m_line) && parse_data(m_line, text, 16))
         m_texts.push_back(text);
-    }
     text_in.close();
 
     m_wave_in.open(wave_path.c_str());
@@ -74,12 +73,11 @@ bool trace_reader_v3::read(trace &pt, const trace::time_range &range)
         !getline(m_wave_in, m_line) || !parse_data(m_line, m_wave, 10))
         return false;
 
-    pt.resize(m_wave.size());
+    pt.clear();
     pt.set_text(m_texts[m_current++]);
 
     for (size_t i = 0; i < m_wave.size(); ++i) {
-        pt[i].time = i;
-        pt[i].power = (float)m_wave[i];
+        pt.push_back(trace::sample(i, (float)m_wave[i]));
         m_events.insert(i);
     }
 

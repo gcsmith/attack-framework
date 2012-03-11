@@ -127,8 +127,7 @@ inline uint64_t convert_bytes(const uint8_t *data)
     return x;
 }
 
-class parameters
-{
+class parameters {
     typedef std::map<std::string, std::string> item_map;
     item_map m_items;
 
