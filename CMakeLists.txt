@@ -31,12 +31,11 @@ set(DPA_VER_MAJ "0")
 set(DPA_VER_MIN "0")
 set(DPA_VER_REV "1")
 
-# find_package(Subversion)
-# if(SUBVERSION_FOUND)
-#     Subversion_WC_INFO(${PROJECT_SOURCE_DIR} DPA)
-#     set(DPA_VER_ID ${DPA_WC_REVISION})
-#     message(STATUS "  Current svn revision is ${DPA_WC_REVISION}")
-# endif(SUBVERSION_FOUND)
+find_package(Git)
+if(GIT_FOUND)
+    GIT_WC_INFO(${PROJECT_SOURCE_DIR} DPA)
+    set(DPA_VER_ID ${DPA_WC_REVISION})
+endif(GIT_FOUND)
 
 set(BUILD_VERSION "${DPA_VER_MAJ}.${DPA_VER_MIN}.${DPA_VER_REV}:${DPA_VER_ID}")
 

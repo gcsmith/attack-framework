@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <vector>
+#include <cstdlib>
 #include <cassert>
 #include "trace_format_out.h"
 
