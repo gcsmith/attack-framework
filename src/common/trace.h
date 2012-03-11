@@ -50,6 +50,9 @@ public:
     /// create trace with specified number of samples
     trace(size_t n) : m_samples(n) { }
 
+    // return constant reference to this trace's samples
+    const std::vector<sample> &samples(void) const { return m_samples; }
+
     // access a specific sample index
     const sample &operator[](size_t i) const { return m_samples[i]; }
 

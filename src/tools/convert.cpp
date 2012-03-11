@@ -29,8 +29,6 @@ int convert_traces(trace_reader *pReader, trace_writer *pWriter,
                    const trace::time_range &range, size_t max_trace,
                    const string profile_path)
 {
-    BENCHMARK_DECLARE(trace_convert);
-
     // determine the total number of traces to convert
     size_t trace_count = pReader->trace_count();
     if (max_trace && max_trace < trace_count) {
@@ -52,7 +50,6 @@ int convert_traces(trace_reader *pReader, trace_writer *pWriter,
 
         const string text(util::btoa(pt.text()));
         printf("converted %s [%zu/%zu]\n", text.c_str(), i + 1, trace_count);
-        BENCHMARK_SAMPLE_WHEN(trace_convert, i && !(i % 100));
     }
 
     // write out the timing profile and close the reader/writer objects
@@ -110,7 +107,6 @@ int main(int argc, char *argv[])
         return 1;
 
     const trace::time_range range(time_min, time_max);
-    printf("%ld - %ld\n", range.first, range.second);
     return convert_traces(rd.get(), wr.get(), range, num_traces, profile);
 }
 

@@ -95,9 +95,6 @@ protected:
     // TODO: description
     void attack_shutdown(void);
 
-    // TODO: description
-    bool map_events(std::vector<long> &mapper, const trace &pt);
-
 protected:
     util::parameters m_params;
     std::vector<long> m_times;
@@ -112,8 +109,8 @@ protected:
     std::ofstream m_ogrp;
     std::ofstream m_omax;
     std::ofstream m_conf;
-    std::string m_attack_name;
-    std::string m_crypto_name;
+    std::string m_attack;
+    std::string m_crypto;
     trace_reader *m_reader;
     xlat_map m_xlat;
 

@@ -58,6 +58,12 @@ namespace util {
 
 typedef std::vector<std::string> pathlist;
 
+// Returns true if the specified path exists and is a directory.
+bool valid_input_dir(const std::string &path);
+
+// Returns true if the specified path exists and is a directory, or creates it.
+bool valid_output_dir(const std::string &path);
+
 // Return a list of the files in a directory matching the specified extension.
 bool scan_directory(const std::string &i_dir, const std::string &ext, pathlist &paths);
 
@@ -72,9 +78,6 @@ std::string btoa(const uint8_t *bytes, size_t count);
 
 /// Convert an array of bytes into a hexadecimal string.
 std::string btoa(const std::vector<uint8_t> &bytes);
-
-// Ensure that the specified input and output directories exist (or create).
-bool check_inout_directories(const std::string &i_dir, const std::string &o_dir);
 
 // Returns the stem portion of a complete file path.
 std::string base_name(const std::string &filename);

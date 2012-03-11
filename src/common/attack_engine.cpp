@@ -87,7 +87,7 @@ void attack_thread::run(void)
 // -----------------------------------------------------------------------------
 attack_engine::attack_engine(void)
 : m_tracemax(0), m_numtraces(0), m_numintervals(0), m_interval(0),
-  m_numthreads(3), m_prefix("out"), m_attack_name("cpa"), m_crypto_name("aes_hw_r0")
+  m_numthreads(3), m_prefix("attack"), m_attack("cpa"), m_crypto("aes_hw_r0")
 {
 }
 
@@ -100,7 +100,7 @@ attack_engine::~attack_engine(void)
 bool attack_engine::open_out(const string &path, ofstream &fout)
 {
     fout.open(path.c_str());
-    if (fout.bad()) {
+    if (!fout.is_open()) {
         fprintf(stderr, "failed to open output file '%s'\n", path.c_str());
         return false;
     }
@@ -110,13 +110,13 @@ bool attack_engine::open_out(const string &path, ofstream &fout)
 // -----------------------------------------------------------------------------
 void attack_engine::set_attack(const string &name)
 {
-    m_attack_name = name;
+    m_attack = name;
 }
 
 // -----------------------------------------------------------------------------
 void attack_engine::set_crypto(const string &name)
 {
-    m_crypto_name = name;
+    m_crypto = name;
 }
 
 // -----------------------------------------------------------------------------
@@ -141,7 +141,8 @@ void attack_engine::set_params(const string &params)
 // -----------------------------------------------------------------------------
 void attack_engine::set_results_prefix(const string &prefix)
 {
-    m_prefix = prefix;
+    if (prefix.length())
+        m_prefix = prefix;
 }
 
 // -----------------------------------------------------------------------------
@@ -257,6 +258,9 @@ void attack_engine::write_confs_report(const vector<double> &maxes)
 // -----------------------------------------------------------------------------
 bool attack_engine::attack_setup(const string &odir)
 {
+    if (!util::valid_output_dir(odir))
+        return false;
+
     // open the results file descriptors well in advance so we don't have to
     // bail out after a particularly lengthy attack
     if (!open_out(util::concat_name(odir, m_prefix + "_diffs.csv"), m_odif) ||
@@ -292,7 +296,7 @@ bool attack_engine::attack_setup(const string &odir)
 
     for (size_t i = 0; i < m_numthreads; ++i) {
         m_threads[i] = new attack_thread(i, this);
-        if (!m_threads[i]->create(m_attack_name, m_crypto_name, m_params))
+        if (!m_threads[i]->create(m_attack, m_crypto, m_params))
             return false;
 
         m_group.create_thread(boost::bind(&attack_thread::run, m_threads[i]));
@@ -369,28 +373,25 @@ bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
                trace_text.c_str(), id, ++m_trace, m_numtraces);
     }
 
-#if 1
-    // map each sample index to its corresponding event index
-    const size_t num_samples = pt.size();
-    tmap.reserve(num_samples);
+    tmap.clear();
 
-    for (size_t s = 0; s < num_samples; ++s) {
-        xlat_map::const_iterator iter = m_xlat.find(pt[s].time);
+    // map each sample index to its corresponding event index
+    foreach (const trace::sample &sample, pt.samples()) {
+        xlat_map::const_iterator iter = m_xlat.find(sample.time);
         if (iter == m_xlat.end()) {
-            printf("event %d not present in timing profile\n", pt[s].time);
+            printf("event %d not present in timing profile\n", sample.time);
             return false;
         }
-        tmap[s] = iter->second;
+        tmap.push_back(iter->second);
     }
-#else
-       trace temp;
-       if (!temp.read_bin(path))
-           return false;
-       pt.sample_and_hold(temp, m_times);
-   
-       tmap.resize(pt.size());
-       for (size_t s = 0; s < pt.size(); ++s) tmap[s] = s;
-#endif
+
+//  trace temp;
+//  if (!temp.read_bin(path))
+//      return false;
+//  pt.sample_and_hold(temp, m_times);
+// 
+//  tmap.resize(pt.size());
+//     for (size_t s = 0; s < pt.size(); ++s) tmap[s] = s;
 
     return true;
 }

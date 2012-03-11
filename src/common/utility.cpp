@@ -28,26 +28,30 @@ namespace fs = boost::filesystem;
 namespace util {
 
 // -----------------------------------------------------------------------------
-bool check_inout_directories(const string &i_dir, const string &o_dir)
+bool valid_input_dir(const string &path)
 {
     // verify that the specified input path exists and is a directory
-    if (!fs::exists(i_dir) || !fs::is_directory(i_dir)) {
-        fprintf(stderr, "invalid input directory %s\n", i_dir.c_str());
+    if (!fs::exists(path) || !fs::is_directory(path)) {
+        fprintf(stderr, "invalid input directory %s\n", path.c_str());
         return false;
     }
+    return true;
+}
 
+// -----------------------------------------------------------------------------
+bool valid_output_dir(const string &path)
+{
     // create output directory if it doesn't exist
-    if (!fs::exists(o_dir) && !fs::create_directory(o_dir)) {
-        fprintf(stderr, "error creating output directory %s\n", o_dir.c_str());
+    if (!fs::exists(path) && !fs::create_directory(path)) {
+        fprintf(stderr, "error creating output directory %s\n", path.c_str());
         return false;
     }
 
     // verify that the specified output path is a directory
-    if (!fs::is_directory(o_dir)) {
+    if (!fs::is_directory(path)) {
         fprintf(stderr, "output path must specifiy a directory\n");
         return false;
     }
-
     return true;
 }
 
