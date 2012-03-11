@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
     string out_path = cl.get_str("output-path", "trace_output_path");
     string profile  = cl.get_str("profile", "timing_profile.txt");
     string key      = cl.get_str("key");
-    long time_min   = cl.get_long("time-min");
-    long time_max   = cl.get_long("time-max");
+    long time_min   = cl.get_long("min-time");
+    long time_max   = cl.get_long("max-time");
     long num_traces = cl.get_long("num-traces");
     bool ciphertext = cl.get_flag("ciphertext");
 
@@ -110,6 +110,7 @@ int main(int argc, char *argv[])
         return 1;
 
     const trace::time_range range(time_min, time_max);
+    printf("%ld - %ld\n", range.first, range.second);
     return convert_traces(rd.get(), wr.get(), range, num_traces, profile);
 }
 

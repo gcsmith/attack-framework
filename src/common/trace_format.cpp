@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include "trace_format_out.h"
 #include "trace_format_packed.h"
 #include "trace_format_sqlite.h"
 #include "trace_format_v1.h"
@@ -25,7 +26,9 @@ using namespace std;
 // -----------------------------------------------------------------------------
 trace_reader *trace_reader::create(const string &format)
 {
-    if (format == "packed")
+    if (format == "out")
+        return new trace_reader_out();
+    else if (format == "packed")
         return new trace_reader_packed();
     else if (format == "sqlite")
         return new trace_reader_sqlite();
@@ -44,7 +47,9 @@ trace_reader *trace_reader::create(const string &format)
 // -----------------------------------------------------------------------------
 trace_writer *trace_writer::create(const string &format)
 {
-    if (format == "packed")
+    if (format == "out")
+        return new trace_writer_out();
+    else if (format == "packed")
         return new trace_writer_packed();
     else if (format == "sqlite")
         return new trace_writer_sqlite();

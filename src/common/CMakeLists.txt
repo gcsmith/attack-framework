@@ -24,6 +24,7 @@ set(common_hdr
     grostl.h
     trace.h
     trace_format.h
+    trace_format_out.h
     trace_format_packed.h
     trace_format_sqlite.h
     trace_format_v1.h
@@ -45,6 +46,7 @@ set(common_src
     grostl.cpp
     trace.cpp
     trace_format.cpp
+    trace_format_out.cpp
     trace_format_packed.cpp
     trace_format_sqlite.cpp
     trace_format_v1.cpp
