@@ -66,9 +66,9 @@ bool trace_reader_packed::read(trace &pt, const trace::time_range &range)
     for (uint32_t i = 0; i < num_samples; ++i) {
         m_input.read((char *)&data.time, sizeof(uint32_t));
         m_input.read((char *)&data.power, sizeof(float));
-        if (range.first && data.time < range.first)
+        if (range.first && (long)data.time < range.first)
             continue;
-        else if (range.second && data.time >= range.second)
+        else if (range.second && (long)data.time >= range.second)
             break;
 
         pt.push_back(data);
