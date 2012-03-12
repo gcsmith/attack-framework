@@ -39,10 +39,18 @@ endif(GIT_FOUND)
 
 set(BUILD_VERSION "${DPA_VER_MAJ}.${DPA_VER_MIN}.${DPA_VER_REV}:${DPA_VER_ID}")
 
+set(boost_components filesystem program_options system thread)
+find_package(Boost 1.46.1 COMPONENTS ${boost_components} REQUIRED)
+find_package(Sqlite3)
+
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${SQLITE3_INCLUDEDIR})
+
 # perform configuration and generate config.h file
 
 include(CheckIncludeFiles)
 check_include_files(intrin.h HAVE_INTRIN_H)
+check_include_files(sqlite3.h HAVE_SQLITE3_H)
 check_include_files(stdint.h HAVE_STDINT_H)
 check_include_files(windows.h HAVE_WINDOWS_H)
 
