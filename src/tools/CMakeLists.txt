@@ -39,6 +39,19 @@ add_executable(destool destool.cpp ${common_hdr})
 target_link_libraries(destool ${tool_libs})
 
 # ------------------------------------------------------------------------------
+project(gentraces)
+
+add_executable(gentraces
+    gentraces.cpp
+    ../common/crypto_aes_hd_r0.cpp
+    ../common/crypto_aes_hd_r10.cpp
+    ../common/crypto_aes_hw_r0.cpp
+    ../common/crypto_aes_hw_r10.cpp
+    ../common/crypto_des_hd_r0.cpp
+    ${common_hdr})
+target_link_libraries(gentraces ${tool_libs})
+
+# ------------------------------------------------------------------------------
 project(grostltool)
 
 add_executable(grostltool grostltool.cpp ${common_hdr})

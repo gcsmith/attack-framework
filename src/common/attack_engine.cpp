@@ -285,8 +285,13 @@ bool attack_engine::attack_setup(const string &odir)
     }
 
     // determine the number of interval reports, including the final report
-    if (m_interval <= 0)
+    if (m_interval <= 0) {
         m_interval = m_numtraces;
+    }
+    else if (m_numthreads > 1) {
+        fprintf(stderr, "cannot set report interval with multiple threads\n");
+        return false;
+    }
 
     m_numintervals = m_numtraces / m_interval;
     if (m_numtraces % m_interval)
@@ -368,6 +373,11 @@ bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
         boost::lock_guard<boost::mutex> lock(m_mutex);
         if (m_trace >= m_numtraces)
             return false;
+
+        if (m_trace && !(m_trace % m_interval)) {
+            printf("report interval %zu...\n", m_trace / m_interval);
+            m_threads[0]->attack()->record_interval(m_trace / m_interval);
+        }
 
         // request the next power trace from the trace reader
         trace::time_range range(0, 0);

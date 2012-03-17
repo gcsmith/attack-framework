@@ -18,10 +18,12 @@
 #define TRACE_FORMAT_V3__H
 
 #include <fstream>
+#include <cstdio>
 #include "trace_format.h"
 
 class trace_reader_v3: public trace_reader {
 public:
+    bool summary(const std::string &path);
     bool open(const std::string &path, const std::string &key, bool ct);
     void close();
     bool read(trace &pt, const trace::time_range &range);
@@ -43,6 +45,10 @@ public:
     bool open(const std::string &path, const std::string &key);
     void close(void);
     bool write(const trace &pt);
+
+protected:
+    FILE *m_text;
+    FILE *m_wave;
 };
 
 #endif // TRACE_FORMAT_V3__H

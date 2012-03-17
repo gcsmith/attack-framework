@@ -20,6 +20,12 @@
 using namespace std;
 
 // -----------------------------------------------------------------------------
+bool trace_reader_packed::summary(const string &path)
+{
+    return true;
+}
+
+// -----------------------------------------------------------------------------
 bool trace_reader_packed::open(const string &path, const string &key, bool ct)
 {
     close();
@@ -57,11 +63,14 @@ bool trace_reader_packed::read(trace &pt, const trace::time_range &range)
 {
     trace::sample data;
     uint32_t num_samples = 0;
-    vector<uint8_t> text(16, 0);
+    uint32_t text_length = 0;
 
     // read in the number of samples and the plaintext/ciphertext
     m_input.read((char *)&num_samples, sizeof(uint32_t));
-    m_input.read((char *)&text[0], 16);
+    m_input.read((char *)&text_length, sizeof(uint32_t));
+
+    vector<uint8_t> text(text_length, 0);
+    m_input.read((char *)&text[0], text_length);
 
     pt.clear();
     pt.set_text(text);
@@ -111,15 +120,13 @@ void trace_writer_packed::close(void)
 // -----------------------------------------------------------------------------
 bool trace_writer_packed::write(const trace &pt)
 {
-    const vector<uint8_t> &text(pt.text());
-    if (16 != text.size()) {
-        fprintf(stderr, "expected 16 byte text, got %d\n", (int)text.size());
-        return false;
-    }
-
     uint32_t num_samples = pt.size();
+    uint32_t text_length = (uint32_t)pt.text().size();
+
+    // write the trace header followed by the waveform
     m_output.write((const char *)&num_samples, sizeof(uint32_t));
-    m_output.write((const char *)&text[0], 16);
+    m_output.write((const char *)&text_length, sizeof(uint32_t));
+    m_output.write((const char *)&pt.text()[0], text_length);
 
     for (size_t i = 0; i < pt.size(); ++i) {
         m_output.write((const char *)&pt[i].time, sizeof(uint32_t));

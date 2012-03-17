@@ -22,6 +22,12 @@
 using namespace std;
 
 // -----------------------------------------------------------------------------
+bool trace_reader_sqlite::summary(const string &path)
+{
+    return true;
+}
+
+// -----------------------------------------------------------------------------
 bool trace_reader_sqlite::open(const string &path, const string &key, bool ct)
 {
     static const char *sql_length = "SELECT count(*) FROM data;";

@@ -23,6 +23,7 @@
 
 class trace_reader_out: public trace_reader {
 public:
+    bool summary(const std::string &path);
     bool open(const std::string &path, const std::string &key, bool ct);
     void close();
     bool read(trace &pt, const trace::time_range &range);

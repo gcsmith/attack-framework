@@ -44,7 +44,8 @@ public:
 protected:
     size_t m_nevents;
     size_t m_nreports;
-    unsigned int m_mask, m_byte, m_offset, m_bits, m_thresh;
+    unsigned int m_mask, m_byte, m_offset, m_bits;
+    unsigned int m_min, m_max;
     vector<size_t> m_binsz; // current size of each bin
     vector<size_t> m_group; // bin sizes for each report interval
     vector<real> m_dtemp;
@@ -85,14 +86,29 @@ void attack_dpa<real>::compute_diffs(real *d)
 template <typename real>
 bool attack_dpa<real>::setup(crypto_instance *crypto, const parameters &params)
 {
+    unsigned int thresh;
     if (!params.get("num_events", m_nevents) ||
         !params.get("num_reports", m_nreports) ||
         !params.get("byte", m_byte) ||
         !params.get("offset", m_offset) ||
         !params.get("bits", m_bits) ||
-        !params.get("thresh", m_thresh)) {
+        !params.get("thresh", thresh)) {
         fprintf(stderr, "missing parameters in attack_dpa\n");
         return false;
+    }
+
+    if (m_bits > 1) {
+        m_min = m_bits - thresh - 1;
+        m_max = thresh;
+
+        if (thresh >= m_bits || m_min >= m_max) {
+            fprintf(stderr, "invalid threshold specified\n");
+            return false;
+        }
+    }
+    else {
+        m_min = 0;
+        m_max = 1;
     }
 
     m_mask = 0;
@@ -120,9 +136,9 @@ void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
         const unsigned int weight = crypto::popcnt[target & m_mask];
 
         int select = 2;
-        if (weight <= (m_bits - m_thresh))
+        if (weight <= m_min)
             select = 0;
-        else if (weight >= m_thresh)
+        else if (weight >= m_max)
             select = 1;
 
         ++m_binsz[k * 3 + select];

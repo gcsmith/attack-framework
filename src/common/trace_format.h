@@ -24,6 +24,9 @@ struct trace_reader {
     // create a trace_reader instance for the given trace format
     static trace_reader *create(const std::string &format);
 
+    // provide a summary of the specified trace directory
+    virtual bool summary(const std::string &path) = 0;
+
     // open the reader for a specified key and plaintex/ciphertext selection
     virtual bool open(const std::string &path, const std::string &key, bool ct) = 0;
 

@@ -25,7 +25,7 @@ class crypto_aes_hd_r10: public crypto_instance {
 public:
     virtual bool set_message(const std::vector<uint8_t> &msg);
     virtual bool set_key(const std::vector<uint8_t> &key);
-    virtual int extract_estimate(int k);
+    virtual int extract_estimate(int n);
     virtual int compute(int n, int k);
     virtual int key_bits()      { return 128; }
     virtual int estimate_bits() { return 8; }
@@ -57,14 +57,14 @@ bool crypto_aes_hd_r10::set_key(const std::vector<uint8_t> &key)
 // -----------------------------------------------------------------------------
 int crypto_aes_hd_r10::extract_estimate(int n)
 {
-    assert(k < 16);
+    assert(n < 16);
     return m_key[n];
 }
 
 // -----------------------------------------------------------------------------
 int crypto_aes_hd_r10::compute(int n, int k)
 {
-    assert(k < 16 && n < 16);
+    assert(n < 16 && k < 256);
     const int ostate = m_msg[aes::shift[n]];
     const int istate = aes::sbox_inv[m_msg[n] ^ k];
     return istate ^ ostate;

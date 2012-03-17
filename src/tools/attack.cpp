@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     string profile  = cl.get_str("profile", "timing_profile.txt");
     int num_threads = cl.get_long("threads", 1);
     int num_traces  = cl.get_long("num-traces", 0);
-    int report_int  = cl.get_long("report", 1000);
+    int report_int  = cl.get_long("report", 0);
     bool ciphertext = cl.get_flag("ciphertext");
 
     // allocate the reader object given the specified trace input format

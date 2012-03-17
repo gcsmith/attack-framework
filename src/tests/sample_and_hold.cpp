@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+#if 0
     // parse each command line argument from the variable map
     string trace_path   = cl.get_str("input-trace");
     string profile_path = cl.get_str("profile");
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
     pt_sh.write_csv("sh_expanded.csv");
 
     printf("expanded trace from %zd to %zd samples\n", pt.size(), pt_sh.size());
+#endif
 
     return 0;
 }

@@ -23,11 +23,42 @@
 using namespace std;
 
 // -----------------------------------------------------------------------------
+bool trace_reader_v2::summary(const string &path)
+{
+    printf("describing: %s\n", path.c_str());
+
+    util::pathlist paths;
+    if (!util::scan_directory(path, ".csv", paths)) {
+        fprintf(stderr, "not a valid trace directory\n");
+        return false;
+    }
+
+    set<string> keys;
+    for (util::pathlist::iterator i = paths.begin(); i != paths.end(); ++i) {
+        size_t beg = i->find("k=");
+        size_t end = i->find("_", beg);
+        if (beg != string::npos && end != string::npos)
+            keys.insert(i->substr(beg + 2, end - beg - 2));
+    }
+
+    printf("trace count: %zu\n", paths.size());
+    printf("key count: %zu\n", keys.size());
+
+    foreach (const string &key, keys)
+        printf("    %s\n", key.c_str());
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
 bool trace_reader_v2::open(const string &path, const string &key, bool ct)
 {
     // get the full list of .csv files located in the input directory
     util::pathlist paths;
-    util::scan_directory(path, ".csv", paths);
+    if (!util::scan_directory(path, ".csv", paths) || !paths.size()) {
+        fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
+        return false;
+    }
 
     // cull the list down to traces matching the specified key
     const string search("k=" + key);
@@ -37,7 +68,7 @@ bool trace_reader_v2::open(const string &path, const string &key, bool ct)
     }
 
     if (!m_paths.size()) {
-        fprintf(stderr, "no trace files found matching specified key\n");
+        fprintf(stderr, "no traces found matching key: %s\n", key.c_str());
         return false;
     }
 

@@ -25,7 +25,7 @@ class crypto_des_hd_r0: public crypto_instance {
 public:
     virtual bool set_message(const std::vector<uint8_t> &msg);
     virtual bool set_key(const std::vector<uint8_t> &key);
-    virtual int extract_estimate(int k);
+    virtual int extract_estimate(int n);
     virtual int compute(int n, int k);
     virtual int key_bits()      { return 48; }
     virtual int estimate_bits() { return 6; }
@@ -55,9 +55,9 @@ bool crypto_des_hd_r0::set_key(const std::vector<uint8_t> &key)
 }
 
 // -----------------------------------------------------------------------------
-int crypto_des_hd_r0::extract_estimate(int k)
+int crypto_des_hd_r0::extract_estimate(int n)
 {
-    return m_key[k];
+    return m_key[n];
 }
 
 // -----------------------------------------------------------------------------

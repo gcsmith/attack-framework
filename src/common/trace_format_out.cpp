@@ -22,11 +22,21 @@
 using namespace std;
 
 // -----------------------------------------------------------------------------
+bool trace_reader_out::summary(const string &path)
+{
+    return true;
+}
+
+// -----------------------------------------------------------------------------
 bool trace_reader_out::open(const string &path, const string &key, bool ct)
 {
     // get the full list of .out files located in the input directory
     close();
-    return util::scan_directory(path, ".out", m_paths);
+    if (!util::scan_directory(path, ".out", m_paths) || !m_paths.size()) {
+        fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
+        return false;
+    }
+    return true;
 }
 
 // -----------------------------------------------------------------------------

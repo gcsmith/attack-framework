@@ -35,10 +35,16 @@ size_t parse_data(const string &input, vector<T> &data, int base)
 }
 
 // -----------------------------------------------------------------------------
+bool trace_reader_v3::summary(const string &path)
+{
+    return true;
+}
+
+// -----------------------------------------------------------------------------
 bool trace_reader_v3::open(const string &path, const string &key, bool ct)
 {
-    const string file_name = ct ? "text_out.txt" : "text_in.txt";
-    const string text_path = util::concat_name(path, file_name);
+    const string text_file = ct ? "text_out.txt" : "text_in.txt";
+    const string text_path = util::concat_name(path, text_file);
     const string wave_path = util::concat_name(path, "wave.txt");
 
     ifstream text_in(text_path.c_str());
@@ -87,20 +93,62 @@ bool trace_reader_v3::read(trace &pt, const trace::time_range &range)
 // -----------------------------------------------------------------------------
 bool trace_writer_v3::open(const string &path, const string &key)
 {
-    assert(!"not implemented");
-    return false;
+    if (!util::valid_output_dir(path))
+        return false;
+
+    const string text_path = util::concat_name(path, "text_out.txt");
+    const string wave_path = util::concat_name(path, "wave.txt");
+    const string key_path  = util::concat_name(path, "key.txt");
+
+    // open the plaintext or ciphertext file
+    m_text = fopen(text_path.c_str(), "w");
+    if (!m_text) {
+        fprintf(stderr, "failed to open text file '%s'\n", text_path.c_str());
+        return false;
+    }
+
+    // open the waveform file
+    m_wave = fopen(wave_path.c_str(), "w");
+    if (!m_wave) {
+        fprintf(stderr, "failed to open wave file '%s'\n", wave_path.c_str());
+        return false;
+    }
+
+    // store the encryption key
+    FILE *fkey = fopen(key_path.c_str(), "w");
+    if (!fkey) {
+        fprintf(stderr, "failed to open key file '%s'\n", key_path.c_str());
+        return false;
+    }
+
+    for (size_t i = 0; i < key.length(); ++i)
+        fprintf(fkey, !(i & 1) ? "%c" : "%c ", key[i]);
+    fclose(fkey);
+
+    return true;
 }
 
 // -----------------------------------------------------------------------------
 void trace_writer_v3::close()
 {
-    assert(!"not implemented");
+    fclose(m_text);
+    fclose(m_wave);
 }
 
 // -----------------------------------------------------------------------------
 bool trace_writer_v3::write(const trace &pt)
 {
-    assert(!"not implemented");
-    return false;
+    // write the plaintext or ciphertext for the current trace
+    const vector<uint8_t> text(pt.text());
+    for (size_t i = 0; i < text.size(); ++i)
+        fprintf(m_text, "%02X ", text[i]);
+    fprintf(m_text, "\n");
+
+    // write each sample for this trace (one line per trace)
+    for (size_t i = 0; i < pt.size(); ++i)
+        fprintf(m_wave, "%d ", (int)pt[i].power);
+    fprintf(m_wave, "\n");
+
+    return true;
 }
 

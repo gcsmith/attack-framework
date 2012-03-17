@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
         { CL_LONG, "max-time,M",    "latest sample event time to convert" },
         { CL_LONG, "num-traces,n",  "maximum number of traces to process" },
         { CL_FLAG, "ciphertext",    "use ciphertext rather than plaintext" },
+        { CL_FLAG, "summary",       "summarize the input trace directory" },
         { CL_FLAG, "help,h",        "display this usage message" },
         { CL_TERM, 0, 0 }
     };
@@ -99,7 +100,16 @@ int main(int argc, char *argv[])
 
     // create reader and writer for specified source/destination trace formats
     auto_ptr<trace_reader> rd(trace_reader::create(src_fmt));
-    if (!rd.get() || !rd->open(in_path, key, ciphertext))
+    if (!rd.get())
+        return 1;
+
+    // describe the input directory and exit when --summary is specified
+    if (cl.get_flag("summary")) {
+        rd->summary(in_path);
+        return 0;
+    }
+
+    if (!rd->open(in_path, key, ciphertext))
         return 1;
 
     auto_ptr<trace_writer> wr(trace_writer::create(dst_fmt));
