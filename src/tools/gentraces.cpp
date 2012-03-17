@@ -17,6 +17,7 @@
 #include <memory>
 #include <string>
 #include <cstdio>
+#include <cstdlib>
 #include "cmdline.h"
 #include "trace_format.h"
 #include "attack_manager.h"
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
         }
 
         if (!pWriter->write(pt)) {
-            fprintf(stderr, "failed to write trace %zu\n", i);
+            fprintf(stderr, "failed to write trace %ld\n", i);
             return 1;
         }
     }
