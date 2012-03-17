@@ -6,14 +6,6 @@
 
 project(common_libs)
 
-find_package(Boost 1.46.1 COMPONENTS filesystem program_options system thread)
-find_package(Sqlite3)
-
-include_directories(
-    ${Boost_INCLUDE_DIRS}
-    ${SQLITE3_INCLUDEDIR}
-)
-
 set(common_hdr
     aes.h
     agilent_reader.h
@@ -26,7 +18,6 @@ set(common_hdr
     trace_format.h
     trace_format_out.h
     trace_format_packed.h
-    trace_format_sqlite.h
     trace_format_v1.h
     trace_format_v2.h
     trace_format_v3.h
@@ -48,12 +39,16 @@ set(common_src
     trace_format.cpp
     trace_format_out.cpp
     trace_format_packed.cpp
-    trace_format_sqlite.cpp
     trace_format_v1.cpp
     trace_format_v2.cpp
     trace_format_v3.cpp
     utility.cpp
 )
+
+if(SQLITE3_FOUND)
+    list(APPEND common_hdr trace_format_sqlite.h)
+    list(APPEND common_src trace_format_sqlite.cpp)
+endif(SQLITE3_FOUND)
 
 add_library(common ${common_src} ${common_hdr})
 
