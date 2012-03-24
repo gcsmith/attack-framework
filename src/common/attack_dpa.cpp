@@ -20,7 +20,6 @@
 #include "crypto.h"
 
 using namespace std;
-using namespace util;
 
 // -----------------------------------------------------------------------------
 template <typename real>
@@ -29,19 +28,19 @@ public:
     attack_dpa();
     ~attack_dpa();
 
-    void compute_diffs(real *d);
-
-    virtual bool setup(crypto_instance *crypto, const parameters &params);
+    virtual bool setup(crypto_instance *crypto, const util::parameters &params);
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
     virtual void coalesce(attack_instance *inst);
+    virtual void write_results(const string &path);
     virtual bool cleanup();
 
     virtual void get_diffs(vector<double> &diffs);
     virtual void get_maxes(vector<double> &maxes);
-    virtual void get_group(vector<size_t> &group, int &ngroups);
 
 protected:
+    void compute_diffs(real *d);
+
     size_t m_nevents;
     size_t m_nreports;
     unsigned int m_mask, m_byte, m_offset, m_bits;
@@ -84,7 +83,8 @@ void attack_dpa<real>::compute_diffs(real *d)
 
 // -----------------------------------------------------------------------------
 template <typename real>
-bool attack_dpa<real>::setup(crypto_instance *crypto, const parameters &params)
+bool attack_dpa<real>::setup(crypto_instance *crypto,
+                             const util::parameters &params)
 {
     unsigned int thresh;
     if (!params.get("num_events", m_nevents) ||
@@ -98,19 +98,23 @@ bool attack_dpa<real>::setup(crypto_instance *crypto, const parameters &params)
     }
 
     if (m_bits > 1) {
+        // compute the minimum and maximum range for segmenting the traces
         m_min = m_bits - thresh - 1;
         m_max = thresh;
-
-        if (thresh >= m_bits || m_min >= m_max) {
-            fprintf(stderr, "invalid threshold specified\n");
-            return false;
-        }
     }
     else {
+        // for a single-bit attack we'll only compare against 0 and 1
         m_min = 0;
         m_max = 1;
     }
 
+    // check for an erroneous combination of #bits and thresh
+    if (thresh >= m_bits || m_min >= m_max) {
+        fprintf(stderr, "invalid threshold specified\n");
+        return false;
+    }
+
+    // compute a mask to extract the portion of the weight we're interested in
     m_mask = 0;
     for (unsigned int i = m_offset; i < (m_offset + m_bits); ++i)
         m_mask |= 1 << i;
@@ -172,14 +176,8 @@ void attack_dpa<real>::coalesce(attack_instance *inst)
 {
     attack_dpa *other = (attack_dpa *)inst;
 
-    if (m_guesses != other->m_guesses) {
-        fprintf(stderr, "attack_dpa::coalesce - guesses mismatch\n");
-        return;
-    }
-    if (m_nevents != other->m_nevents) {
-        fprintf(stderr, "attack_dpa::coalesce - nevents mismatch\n");
-        return;
-    }
+    assert(m_guesses != other->m_guesses);
+    assert(m_nevents != other->m_nevents);
 
     for (int k = 0; k < m_guesses; ++k) {
         // accumulate bin sizes
@@ -217,12 +215,29 @@ void attack_dpa<real>::get_maxes(vector<double> &maxes)
 
 // -----------------------------------------------------------------------------
 template <typename real>
-void attack_dpa<real>::get_group(vector<size_t> &group, int &ngroups)
+void attack_dpa<real>::write_results(const string &path)
 {
-    ngroups = 3;
-    group.resize(m_guesses * 3 * m_nreports);
-    for (size_t i = 0; i < m_guesses * 3 * m_nreports; ++i)
-        group[i] = m_group[i];
+//     ngroups = 3;
+//     group.resize(m_guesses * 3 * m_nreports);
+//     for (size_t i = 0; i < m_guesses * 3 * m_nreports; ++i)
+//         group[i] = m_group[i];
+// 
+//     if (!ngroups || group.size() != 256 * ngroups * m_numintervals) {
+//         fprintf(stderr, "invalid # of groups in write_group_report\n");
+//         return;
+//     }
+// 
+//     for (size_t i = 0; i < m_numintervals; ++i) {
+//         const size_t *c = &group[i * 256 * ngroups];
+//         m_ogrp << m_interval * (i + 1);
+// 
+//         for (int g = 0; g < ngroups; ++g) {
+//             m_ogrp << ',' << g << ',';
+//             for (int k = 0; k < 256; ++k)
+//                 m_ogrp << c[k * ngroups + g] << ',';
+//             m_ogrp << endl;
+//         }
+//     }
 }
 
 // -----------------------------------------------------------------------------

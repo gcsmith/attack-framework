@@ -24,8 +24,6 @@ using namespace util;
 
 // -----------------------------------------------------------------------------
 class attack_pscc: public attack_instance {
-    typedef float real;
-
 public:
     attack_pscc();
     ~attack_pscc();
@@ -34,13 +32,14 @@ public:
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
     virtual void coalesce(attack_instance *inst);
+    virtual void write_results(const string &path);
     virtual bool cleanup();
 
     virtual void get_diffs(vector<double> &diffs);
     virtual void get_maxes(vector<double> &maxes);
-    virtual void get_group(vector<size_t> &group, int &ngroups);
 
 protected:
+    typedef float real;
     size_t m_traces;        // number of traces processed
     size_t m_nevents;       // number of unique trace events
     size_t m_nreports;      // number of reports to compute
@@ -139,26 +138,16 @@ void attack_pscc::coalesce(attack_instance *inst)
 // -----------------------------------------------------------------------------
 void attack_pscc::get_diffs(vector<double> &diffs)
 {
-    const size_t num_events = m_nevents;
     const real n = (real)m_traces;
     const real dw = sqrt(n * m_w2 - m_w1 * m_w1);
 
-    diffs.resize(num_events, 0);
-    for (size_t s = 0; s < num_events; ++s) {
+    diffs.resize(m_nevents, 0);
+    for (size_t s = 0; s < m_nevents; ++s) {
         real dn = n * m_pw[s] - m_p1[s] * m_w1;
         real dp = n * m_p2[s] - m_p1[s] * m_p1[s];
         real dd = dw * sqrt(dp);
         diffs[s] = (fabs(dd) > EPSILON) ? (dn / dd) : 0;
     }
-
-    ofstream fp("sanity.txt");
-    for (size_t s = 0; s < num_events; ++s)
-        fp << m_p1[s] << " " << m_p2[s] << " " << m_pw[s] << " "
-           << m_w1 << " " << m_w2 << " " << m_traces << " " << num_events << endl;
-
-    ofstream fout("pscc_results.csv");
-    for (size_t s = 0; s < num_events; ++s)
-        fout << s << "," << scientific << diffs[s] << endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -167,9 +156,20 @@ void attack_pscc::get_maxes(vector<double> &maxes)
 }
 
 // -----------------------------------------------------------------------------
-void attack_pscc::get_group(vector<size_t> &group, int &ngroups)
+void attack_pscc::write_results(const string &path)
 {
-    ngroups = 0;
+    // XXX: why did I write this?
+    ofstream fp(util::concat_name(path, "pscc_sanity.txt").c_str());
+    for (size_t s = 0; s < m_nevents; ++s)
+        fp << m_p1[s] << " " << m_p2[s] << " " << m_pw[s] << " " << m_w1
+           << " " << m_w2 << " " << m_traces << " " << m_nevents << endl;
+
+#if 0
+    // write correlation coefficients for each event
+    ofstream fout(util::concat_name(path, "pscc_results.csv").c_str());
+    for (size_t s = 0; s < m_nevents; ++s)
+        fout << s << "," << scientific << diffs[s] << endl;
+#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -178,5 +178,5 @@ bool attack_pscc::cleanup()
     return true;
 }
 
-register_attack(pscc,  attack_pscc());
+register_attack(pscc,  attack_pscc);
 

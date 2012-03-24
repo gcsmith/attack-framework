@@ -21,76 +21,10 @@
 #include "trace.h"
 #include "utility.h"
 #include "attack_engine.h"
+#include "attack_thread.h"
 
 using namespace std;
 using namespace util;
-
-// -----------------------------------------------------------------------------
-class attack_thread {
-public:
-    attack_thread(int id, attack_engine *engine);
-    ~attack_thread(void);
-
-    bool create(const string &an, const string &cn, const parameters &p);
-    void run(void);
-    attack_instance *attack(void) const { return m_attack.get(); }
-    crypto_instance *crypto(void) const { return m_crypto.get(); }
-
-protected:
-    int m_id;
-    attack_engine *m_engine;
-    auto_ptr<attack_instance> m_attack;
-    auto_ptr<crypto_instance> m_crypto;
-};
-
-// -----------------------------------------------------------------------------
-attack_thread::attack_thread(int id, attack_engine *engine)
-: m_id(id), m_engine(engine)
-{
-}
-
-// -----------------------------------------------------------------------------
-attack_thread::~attack_thread(void)
-{
-    m_attack->cleanup();
-}
-
-// -----------------------------------------------------------------------------
-bool attack_thread::create(const string &an, const string &cn, const parameters &p)
-{
-    m_attack.reset(attack_manager::create_attack(an));
-    if (!m_attack.get()) {
-        fprintf(stderr, "failed to create attack instance %s\n", an.c_str());
-        return false;
-    }
-
-    m_crypto.reset(attack_manager::create_crypto(cn));
-    if (!m_crypto.get()) {
-        fprintf(stderr, "failed to create crypto instance %s\n", cn.c_str());
-        return false;
-    }
-
-    return m_attack->setup(m_crypto.get(), p);
-}
-
-// -----------------------------------------------------------------------------
-void attack_thread::run(void)
-{
-    trace pt(4096);
-    vector<long> mapper;
-
-    while (m_engine->next_trace(m_id, mapper, pt)) {
-        // provide the next plaintext/ciphertext to the crypto instance
-        if (!m_crypto->set_message(pt.text())) {
-            fprintf(stderr, "[%d] invalid plain/ciphertext specified: %s\n",
-                    m_id, btoa(pt.text()).c_str());
-            return;
-        }
-
-        // run the attack algorithm on the next set of samples
-        m_attack->process(mapper, pt);
-    }
-}
 
 // -----------------------------------------------------------------------------
 attack_engine::attack_engine(void)
@@ -222,27 +156,6 @@ void attack_engine::write_maxes_report(const vector<double> &maxes)
 }
 
 // -----------------------------------------------------------------------------
-void attack_engine::write_group_report(const vector<size_t> &group, int ngroups)
-{
-    if (!ngroups || group.size() != 256 * ngroups * m_numintervals) {
-        fprintf(stderr, "invalid # of groups in write_group_report\n");
-        return;
-    }
-
-    for (size_t i = 0; i < m_numintervals; ++i) {
-        const size_t *c = &group[i * 256 * ngroups];
-        m_ogrp << m_interval * (i + 1);
-
-        for (int g = 0; g < ngroups; ++g) {
-            m_ogrp << ',' << g << ',';
-            for (int k = 0; k < 256; ++k)
-                m_ogrp << c[k * ngroups + g] << ',';
-            m_ogrp << endl;
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
 void attack_engine::write_confs_report(const vector<double> &maxes)
 {
     if (maxes.size() != 256 * m_numintervals) {
@@ -272,7 +185,6 @@ bool attack_engine::attack_setup(const string &odir)
     // open the results file descriptors well in advance so we don't have to
     // bail out after a particularly lengthy attack
     if (!open_out(util::concat_name(odir, m_prefix + "_diffs.csv"), m_odif) ||
-        !open_out(util::concat_name(odir, m_prefix + "_group.csv"), m_ogrp) ||
         !open_out(util::concat_name(odir, m_prefix + "_maxes.csv"), m_omax) || 
         !open_out(util::concat_name(odir, m_prefix + "_confs.csv"), m_conf))
         return false;
@@ -322,17 +234,14 @@ bool attack_engine::attack_setup(const string &odir)
 void attack_engine::attack_shutdown(void)
 {
     vector<double> diffs, maxes;
-    vector<size_t> groups;
-    int ngroups = 0, k = 1 << m_threads[0]->crypto()->estimate_bits();
+    int k = 1 << m_threads[0]->crypto()->estimate_bits();
 
     m_threads[0]->attack()->get_diffs(diffs);
     m_threads[0]->attack()->get_maxes(maxes);
-    m_threads[0]->attack()->get_group(groups, ngroups);
 
     write_diffs_report(diffs, k);
     write_maxes_report(maxes);
     write_confs_report(maxes);
-    write_group_report(groups, ngroups);
 
     foreach (attack_thread *thrd, m_threads) {
         delete thrd;
@@ -352,10 +261,9 @@ bool attack_engine::run(const string &results_path)
     m_group.join_all();
 
     // if there are multiple worker threads, merge their results
-    if (m_threads.size() > 1) {
-        printf("coalescing thread instances...\n");
-        for (size_t i = 1; i < m_threads.size(); ++i)
-            m_threads[0]->attack()->coalesce(m_threads[i]->attack());
+    for (size_t i = 1; i < m_threads.size(); ++i) {
+        printf("coalescing thread instance [%zu]...\n", i);
+        m_threads[0]->attack()->coalesce(m_threads[i]->attack());
     }
 
     attack_shutdown();

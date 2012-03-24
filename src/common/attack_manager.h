@@ -62,6 +62,9 @@ struct attack_instance {
     /// Merge the state of two attack_instance objects together.
     virtual void coalesce(attack_instance *inst) = 0;
 
+    // Write attack results to the specified directory
+    virtual void write_results(const std::string &path) = 0;
+
     /// Perform post-attack shutdown (if any).
     virtual bool cleanup() = 0;
 
@@ -70,9 +73,6 @@ struct attack_instance {
 
     /// TODO: description
     virtual void get_maxes(std::vector<double> &maxes) = 0;
-
-    /// TODO: description
-    virtual void get_group(std::vector<size_t> &group, int &ngroups) = 0;
 
     // Explicit virtual destructor, as attack_instance will be subclassed
     virtual ~attack_instance() {}
@@ -88,10 +88,10 @@ namespace attack_manager {
     /// Add a new crypto instance to the manager.
     bool add_crypto(const std::string &name, create_crypto_fn fn);
 
-    /// TODO: description
+    /// Create an attack instance of the specified name
     attack_instance *create_attack(const std::string &name);
 
-    /// TODO: description
+    /// Create a crypto instance of the specified name
     crypto_instance *create_crypto(const std::string &name);
 
     // TODO: description

@@ -29,19 +29,19 @@ public:
     attack_cpa();
     virtual ~attack_cpa();
 
-    void compute_diffs(real *d);
-
     virtual bool setup(crypto_instance *crypto, const parameters &params);
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
     virtual void coalesce(attack_instance *inst);
+    virtual void write_results(const string &path);
     virtual bool cleanup();
 
     virtual void get_diffs(vector<double> &diffs);
     virtual void get_maxes(vector<double> &maxes);
-    virtual void get_group(vector<size_t> &group, int &ngroups);
 
 protected:
+    void compute_diffs(real *d);
+
     crypto_instance *m_crypto;
     size_t m_traces;
     size_t m_nevents;
@@ -210,9 +210,8 @@ void attack_cpa<real>::get_maxes(vector<double> &maxes)
 
 // -----------------------------------------------------------------------------
 template <typename real>
-void attack_cpa<real>::get_group(vector<size_t> &group, int &ngroups)
+void attack_cpa<real>::write_results(const string &path)
 {
-    ngroups = 0;
 }
 
 // -----------------------------------------------------------------------------

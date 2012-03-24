@@ -11,6 +11,7 @@ set(common_hdr
     agilent_reader.h
     attack_engine.h
     attack_manager.h
+    attack_thread.h
     cmdline.h
     des.h
     grostl.h
@@ -32,6 +33,7 @@ set(common_src
 #   attack_dpa.cpp
     attack_engine.cpp
     attack_manager.cpp
+    attack_thread.cpp
     cmdline.cpp
     des.cpp
     grostl.cpp

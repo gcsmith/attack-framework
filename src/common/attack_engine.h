@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef ATTACK__H
-#define ATTACK__H
+#ifndef ATTACK_ENGINE__H
+#define ATTACK_ENGINE__H
 
 #include <fstream>
 #include <vector>
@@ -84,9 +84,6 @@ protected:
     void write_maxes_report(const std::vector<double> &maxes);
 
     // TODO: description
-    void write_group_report(const std::vector<size_t> &group, int ngroups);
-
-    // TODO: description
     void write_confs_report(const std::vector<double> &maxes);
 
     // TODO: description
@@ -106,7 +103,6 @@ protected:
     size_t m_trace;
     std::string m_odir, m_prefix;
     std::ofstream m_odif;
-    std::ofstream m_ogrp;
     std::ofstream m_omax;
     std::ofstream m_conf;
     std::string m_attack;
@@ -119,5 +115,5 @@ protected:
     std::vector<attack_thread *> m_threads;
 };
 
-#endif // ATTACK__H
+#endif // ATTACK_ENGINE__H
 

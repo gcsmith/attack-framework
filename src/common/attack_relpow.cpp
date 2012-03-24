@@ -32,11 +32,11 @@ public:
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
     virtual void coalesce(attack_instance *inst);
+    virtual void write_results(const string &path);
     virtual bool cleanup();
 
     virtual void get_diffs(vector<double> &diffs);
     virtual void get_maxes(vector<double> &maxes);
-    virtual void get_group(vector<size_t> &group, int &ngroups);
 
 protected:
     size_t m_nevents;       // number of traces processed
@@ -120,13 +120,6 @@ void attack_relpow::coalesce(attack_instance *inst)
 // -----------------------------------------------------------------------------
 void attack_relpow::get_diffs(vector<double> &diffs)
 {
-    ofstream fp_v("svalue_vs_voltage.csv");
-    ofstream fp_t("svalue_vs_traces.csv");
-    for (int i = 0; i < 256; ++i) {
-        float avg_pow = m_num[i] ? (m_pow[i] / m_num[i]) : 0;
-        fp_v << i << "," << scientific << avg_pow << endl;
-        fp_t << i << "," << m_num[i] << endl;
-    }
 }
 
 // -----------------------------------------------------------------------------
@@ -135,9 +128,16 @@ void attack_relpow::get_maxes(vector<double> &maxes)
 }
 
 // -----------------------------------------------------------------------------
-void attack_relpow::get_group(vector<size_t> &group, int &ngroups)
+void attack_relpow::write_results(const string &path)
 {
-    ngroups = 0;
+    ofstream fp_v(util::concat_name(path, "svalue_vs_voltage.csv").c_str());
+    ofstream fp_t(util::concat_name(path, "svalue_vs_traces.csv").c_str());
+
+    for (int i = 0; i < 256; ++i) {
+        float avg_pow = m_num[i] ? (m_pow[i] / m_num[i]) : 0;
+        fp_v << i << "," << scientific << avg_pow << endl;
+        fp_t << i << "," << m_num[i] << endl;
+    }
 }
 
 // -----------------------------------------------------------------------------
