@@ -81,8 +81,8 @@ bool trace_reader_out::read(trace &pt, const trace::time_range &range)
         else if (line[0] == '2' && line[1] == ' ') {
             // power value, update the current trace entry
             if (pt.size() <= 0) {
-                fprintf(stderr, "warning: read power sample before time\n");
-                continue;
+                fprintf(stderr, "error: read power sample before event time\n");
+                return false;
             }
             pt[pt.size() - 1].power += strtof(&line[2], NULL);
         }
@@ -100,26 +100,5 @@ bool trace_reader_out::read(trace &pt, const trace::time_range &range)
     }
 
     return true;
-
-}
-
-// -----------------------------------------------------------------------------
-bool trace_writer_out::open(const string &path, const string &key)
-{
-    assert(!"not implemented");
-    return false;
-}
-
-// -----------------------------------------------------------------------------
-void trace_writer_out::close()
-{
-    assert(!"not implemented");
-}
-
-// -----------------------------------------------------------------------------
-bool trace_writer_out::write(const trace &pt)
-{
-    assert(!"not implemented");
-    return false;
 }
 

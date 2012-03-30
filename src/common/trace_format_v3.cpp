@@ -63,6 +63,8 @@ bool trace_reader_v3::open(const string &path, const string &key, bool ct)
         fprintf(stderr, "failed to open wave file '%s'\n", wave_path.c_str());
         return false;
     }
+
+    m_current = 0;
     return true;
 }
 
@@ -75,7 +77,7 @@ void trace_reader_v3::close()
 // -----------------------------------------------------------------------------
 bool trace_reader_v3::read(trace &pt, const trace::time_range &range)
 {
-    if (m_current > m_texts.size() ||
+    if (m_current >= m_texts.size() ||
         !getline(m_wave_in, m_line) || !parse_data(m_line, m_wave, 10))
         return false;
 

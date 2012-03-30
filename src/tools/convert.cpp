@@ -40,11 +40,11 @@ int convert_traces(trace_reader *pReader, trace_writer *pWriter,
     trace pt;
     for (size_t i = 0; i < trace_count; ++i) {
         if (!pReader->read(pt, range)) {
-            fprintf(stderr, "failed to read trace %zu\n", i);
+            fprintf(stderr, "failed to read trace %zu\n", i + 1);
             return 1;
         }
         if (!pWriter->write(pt)) {
-            fprintf(stderr, "failed to write trace %zu\n", i);
+            fprintf(stderr, "failed to write trace %zu\n", i + 1);
             return 1;
         }
 

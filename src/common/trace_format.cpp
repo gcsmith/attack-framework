@@ -16,6 +16,7 @@
 
 #include "trace_format_out.h"
 #include "trace_format_packed.h"
+#include "trace_format_simv.h"
 #include "trace_format_v1.h"
 #include "trace_format_v2.h"
 #include "trace_format_v3.h"
@@ -31,10 +32,12 @@ trace_reader *trace_reader::create(const std::string &format)
         return new trace_reader_out();
     else if (format == "packed")
         return new trace_reader_packed();
+    else if (format == "simv")
+        return new trace_reader_simv();
 #ifdef HAVE_SQLITE3_H
     else if (format == "sqlite")
         return new trace_reader_sqlite();
-#endif // HAVE_SQLITE3_H
+#endif
     else if (format == "v1")
         return new trace_reader_v1();
     else if (format == "v2")
@@ -50,14 +53,12 @@ trace_reader *trace_reader::create(const std::string &format)
 // -----------------------------------------------------------------------------
 trace_writer *trace_writer::create(const std::string &format)
 {
-    if (format == "out")
-        return new trace_writer_out();
-    else if (format == "packed")
+    if (format == "packed")
         return new trace_writer_packed();
 #ifdef HAVE_SQLITE3_H
     else if (format == "sqlite")
         return new trace_writer_sqlite();
-#endif // HAVE_SQLITE3_H
+#endif
     else if (format == "v1")
         return new trace_writer_v1();
     else if (format == "v2")

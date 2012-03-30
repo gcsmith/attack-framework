@@ -58,6 +58,9 @@ public:
     // access a specific sample index
     sample &operator[](size_t i) { return m_samples[i]; }
 
+    // access the last sample
+    sample &back(void) { return m_samples.back(); }
+
     // return the number of samples in this trace
     size_t size(void) const { return m_samples.size(); }
 

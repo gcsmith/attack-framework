@@ -91,6 +91,12 @@ std::string concat_name(const std::string &dir, const std::string &name, const s
 // Split the input string given a string of delimiters.
 std::vector<std::string> split(const std::string &str, const std::string &del);
 
+// Trim leading and trailing whitespace from string.
+std::string trim_copy(const std::string &str);
+
+// Trim leading and trailing whitespace from string.
+std::string &trim(std::string &str);
+
 // Returns true if the specified path is a directory.
 bool is_dir(const std::string &path);
 

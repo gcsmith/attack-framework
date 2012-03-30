@@ -19,6 +19,7 @@ set(common_hdr
     trace_format.h
     trace_format_out.h
     trace_format_packed.h
+    trace_format_simv.h
     trace_format_v1.h
     trace_format_v2.h
     trace_format_v3.h
@@ -41,6 +42,7 @@ set(common_src
     trace_format.cpp
     trace_format_out.cpp
     trace_format_packed.cpp
+    trace_format_simv.cpp
     trace_format_v1.cpp
     trace_format_v2.cpp
     trace_format_v3.cpp
