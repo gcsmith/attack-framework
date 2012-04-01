@@ -22,10 +22,17 @@
 
 namespace grostl {
 
-typedef std::vector<uint8_t> bytes;
+// Grostl-256 P permutation.
+void permute_p(const uint8_t *in, uint8_t *out);
 
-/// Compute the hash of the input message using Grostl-256.
-void hash(const bytes &in, bytes &out);
+// Grostl-256 Q permutation.
+void permute_q(const uint8_t *in, uint8_t *out);
+
+// Grostl-256 compression function.
+void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out);
+
+/// Compute the Grostl-256 hash of the input message.
+void hash(const std::vector<uint8_t> &in, std::vector<uint8_t> &out);
 
 } // namespace grostl
 

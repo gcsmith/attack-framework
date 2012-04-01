@@ -106,28 +106,28 @@ void mix_bytes(const uint8_t *in, uint8_t *out)
 // -----------------------------------------------------------------------------
 void permute_p(const uint8_t *in, uint8_t *out)
 {
-    uint8_t s1[64], *s0 = out;
-    memcpy(s0, in, 64);
+    uint8_t temp[64];
+    memcpy(out, in, 64);
 
     for (int round = 0; round < 10; ++round) {
-        add_round_const_p(s0, round, s1);
-        sub_bytes(s1, s0);
-        shift_bytes_p(s0, s1);
-        mix_bytes(s1, s0);
+        add_round_const_p(out, round, temp);
+        sub_bytes(temp, out);
+        shift_bytes_p(out, temp);
+        mix_bytes(temp, out);
     }
 }
 
 // -----------------------------------------------------------------------------
 void permute_q(const uint8_t *in, uint8_t *out)
 {
-    uint8_t s1[64], *s0 = out;
-    memcpy(s0, in, 64);
+    uint8_t temp[64];
+    memcpy(out, in, 64);
 
     for (int round = 0; round < 10; ++round) {
-        add_round_const_q(s0, round, s1);
-        sub_bytes(s1, s0);
-        shift_bytes_q(s0, s1);
-        mix_bytes(s1, s0);
+        add_round_const_q(out, round, temp);
+        sub_bytes(temp, out);
+        shift_bytes_q(out, temp);
+        mix_bytes(temp, out);
     }
 }
 
@@ -163,10 +163,10 @@ void output_transform(const uint8_t *msg, uint8_t *out)
 }
 
 // -----------------------------------------------------------------------------
-void hash(const bytes &in, bytes &out)
+void hash(const vector<uint8_t> &in, vector<uint8_t> &out)
 {
     // TODO
-    bytes state(64, 0), chain(64, 0), fout(64, 0);
+    vector<uint8_t> state(64, 0), chain(64, 0), fout(64, 0);
     state.resize(64);
     state[0] = in[0];
     state[1] = in[1];

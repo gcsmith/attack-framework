@@ -28,9 +28,12 @@ int main(int argc, char *argv[])
     // build and parse the table of command line arguments
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
-        { CL_STRV, "input,i",   "specify the message to hash" },
-        { CL_FLAG, "dec",       "display data in base 10" },
-        { CL_FLAG, "help,h",    "display this usage message" },
+        { CL_STRV, "input,i",     "specify the message to hash" },
+        { CL_STRV, "compress,c",  "specify the message block to compress" },
+        { CL_STRV, "p-permute,p", "specify the message block to p-permute" },
+        { CL_STRV, "q-permute,q", "specify the message block to q-permute" },
+        { CL_FLAG, "dec",         "display data in base 10" },
+        { CL_FLAG, "help,h",      "display this usage message" },
         { CL_TERM, 0, 0 }
     };
 
@@ -48,6 +51,34 @@ int main(int argc, char *argv[])
         // display both the input message and the output digest
         printf("message: %s\n", msg.c_str());
         printf("digest:  %s\n", util::btoa(out).c_str());
+    }
+
+    foreach (const string &msg, cl.get_strv("p-permute")) {
+        // convert the hex string to a byte sequence and perform the permutation
+        vector<uint8_t> out(64), in = util::atob(msg);
+        if (64 != in.size()) {
+            fprintf(stderr, "incorrect state size (%zu)\n", in.size());
+            continue;
+        }
+        grostl::permute_p(&in[0], &out[0]);
+
+        // display both the input state and the permuted output state
+        printf("state:     %s\n", msg.c_str());
+        printf("P(state):  %s\n", util::btoa(out).c_str());
+    }
+
+    foreach (const string &msg, cl.get_strv("q-permute")) {
+        // convert the hex string to a byte sequence and perform the permutation
+        vector<uint8_t> out(64), in = util::atob(msg);
+        if (64 != in.size()) {
+            fprintf(stderr, "incorrect state size (%zu)\n", in.size());
+            continue;
+        }
+        grostl::permute_q(&in[0], &out[0]);
+
+        // display both the input state and the permuted output state
+        printf("state:     %s\n", msg.c_str());
+        printf("Q(state):  %s\n", util::btoa(out).c_str());
     }
 
     return 0;

@@ -53,7 +53,7 @@ bool trace_reader_simv::open(const string &path, const string &key, bool ct)
             fprintf(stderr, "expected format: <index> <text_in> <text_out>\n");
             return false;
         }
-        const long long event = strtoll(tok[0].c_str(), NULL, 10);
+        const long long event = strtoll(tok[0].c_str(), NULL, 10) * 100;
         m_records.push_back(record(event, tok[1]));
     }
 
