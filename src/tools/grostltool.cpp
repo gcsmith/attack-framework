@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
         grostl::hash(in, out);
 
         // display both the input message and the output digest
-        printf("message: %s\n", msg.c_str());
+        printf("message: %s\n", util::btoa(in).c_str());
         printf("digest:  %s\n", util::btoa(out).c_str());
     }
 
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
         grostl::permute_p(&in[0], &out[0]);
 
         // display both the input state and the permuted output state
-        printf("state:     %s\n", msg.c_str());
+        printf("state:     %s\n", util::btoa(in).c_str());
         printf("P(state):  %s\n", util::btoa(out).c_str());
     }
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
         grostl::permute_q(&in[0], &out[0]);
 
         // display both the input state and the permuted output state
-        printf("state:     %s\n", msg.c_str());
+        printf("state:     %s\n", util::btoa(in).c_str());
         printf("Q(state):  %s\n", util::btoa(out).c_str());
     }
 

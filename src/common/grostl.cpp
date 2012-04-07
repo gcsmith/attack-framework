@@ -111,9 +111,13 @@ void permute_p(const uint8_t *in, uint8_t *out)
 
     for (int round = 0; round < 10; ++round) {
         add_round_const_p(out, round, temp);
+        printf("[%x] RC: %s\n", round, util::btoa(temp, 64).c_str());
         sub_bytes(temp, out);
+        printf("[%x] SB: %s\n", round, util::btoa(out, 64).c_str());
         shift_bytes_p(out, temp);
+        printf("[%x] SH: %s\n", round, util::btoa(temp, 64).c_str());
         mix_bytes(temp, out);
+        printf("[%x] MB: %s\n\n", round, util::btoa(out, 64).c_str());
     }
 }
 
