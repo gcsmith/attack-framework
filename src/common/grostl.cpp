@@ -111,13 +111,13 @@ void permute_p(const uint8_t *in, uint8_t *out)
 
     for (int round = 0; round < 10; ++round) {
         add_round_const_p(out, round, temp);
-        printf("[%x] RC: %s\n", round, util::btoa(temp, 64).c_str());
+        printf("[P:%x] RC: %s\n", round, util::btoa(temp, 64).c_str());
         sub_bytes(temp, out);
-        printf("[%x] SB: %s\n", round, util::btoa(out, 64).c_str());
+        printf("[P:%x] SB: %s\n", round, util::btoa(out, 64).c_str());
         shift_bytes_p(out, temp);
-        printf("[%x] SH: %s\n", round, util::btoa(temp, 64).c_str());
+        printf("[P:%x] SH: %s\n", round, util::btoa(temp, 64).c_str());
         mix_bytes(temp, out);
-        printf("[%x] MB: %s\n\n", round, util::btoa(out, 64).c_str());
+        printf("[P:%x] MB: %s\n\n", round, util::btoa(out, 64).c_str());
     }
 }
 
@@ -129,17 +129,21 @@ void permute_q(const uint8_t *in, uint8_t *out)
 
     for (int round = 0; round < 10; ++round) {
         add_round_const_q(out, round, temp);
+        printf("[Q:%x] RC: %s\n", round, util::btoa(temp, 64).c_str());
         sub_bytes(temp, out);
+        printf("[Q:%x] SB: %s\n", round, util::btoa(out, 64).c_str());
         shift_bytes_q(out, temp);
+        printf("[Q:%x] SH: %s\n", round, util::btoa(temp, 64).c_str());
         mix_bytes(temp, out);
+        printf("[Q:%x] MB: %s\n\n", round, util::btoa(out, 64).c_str());
     }
 }
 
 // -----------------------------------------------------------------------------
 void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out)
 {
-    printf("initial: %s\n", util::btoa(chain, 64).c_str());
-    printf("block:   %s\n", util::btoa(msg, 64).c_str());
+    printf("chain: %s\n", util::btoa(chain, 64).c_str());
+    printf("msg:   %s\n", util::btoa(msg, 64).c_str());
 
     uint8_t hm[64], p[64], q[64];
     for (int i = 0; i < 64; ++i)

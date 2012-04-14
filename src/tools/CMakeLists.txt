@@ -54,6 +54,12 @@ add_executable(profile profile.cpp ${common_hdr})
 target_link_libraries(profile ${tool_libs})
 
 # ------------------------------------------------------------------------------
+project(sboxtool)
+
+add_executable(sboxtool sboxtool.cpp ${common_hdr})
+target_link_libraries(sboxtool ${tool_libs})
+
+# ------------------------------------------------------------------------------
 project(attack)
 
 add_executable(attack

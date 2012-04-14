@@ -40,12 +40,6 @@ bool trace_reader_simv::open(const string &path, const string &key, bool ct)
         return false;
     }
 
-    m_wav_in.open(wav_path.c_str());
-    if (!m_wav_in.is_open()) {
-        fprintf(stderr, "failed to open file: %s\n", wav_path.c_str());
-        return false;
-    }
-
     // read in the record for each simulated encryption
     while (getline(sim_in, m_line)) {
         const vector<string> tok(util::split(util::trim(m_line), " "));
@@ -57,6 +51,12 @@ bool trace_reader_simv::open(const string &path, const string &key, bool ct)
         m_records.push_back(record(event, tok[1]));
     }
 
+    // read in the waveform data and perform a pass to collect event indices
+    m_wav_in.open(wav_path.c_str());
+    if (!m_wav_in.is_open()) {
+        fprintf(stderr, "failed to open file: %s\n", wav_path.c_str());
+        return false;
+    }
     scan_events();
 
     m_current = 0;

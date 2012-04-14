@@ -105,9 +105,9 @@ int main(int argc, char *argv[])
     else
         print_key(sk, print_dec);
 
-    uint8_t mask;
+    vector<uint8_t> mask(2);
     bool enable_mask = !!cl.count("mask");
-    if (enable_mask && !util::atob(cl.get_str("mask"), &mask, 1)) {
+    if (enable_mask && !util::atob(cl.get_str("mask"), &mask[0], 2)) {
         fprintf(stderr, "invalid mask specified. exiting\n");
         return 1;
     }
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         }
 
         if (enable_mask)
-            aes::encrypt_mask(msg_in, sk, msg_out, mask);
+            aes::encrypt_mask(msg_in, sk, msg_out, mask[0], mask[1]);
         else
             aes::encrypt(msg_in, sk, msg_out);
 
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
         }
 
         if (enable_mask)
-            aes::decrypt_mask(msg_in, sk, msg_out, mask);
+            aes::decrypt_mask(msg_in, sk, msg_out, mask[0], mask[1]);
         else
             aes::decrypt(msg_in, sk, msg_out);
 

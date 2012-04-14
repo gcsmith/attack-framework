@@ -53,6 +53,20 @@ int main(int argc, char *argv[])
         printf("digest:  %s\n", util::btoa(out).c_str());
     }
 
+    foreach (const string &msg, cl.get_strv("compress")) {
+        // convert the hex string to a byte sequence and perform the permutation
+        vector<uint8_t> out(64), in = util::atob(msg);
+        if (128 != in.size()) {
+            fprintf(stderr, "incorrect state size (%zu)\n", in.size());
+            continue;
+        }
+        grostl::compress(&in[0], &in[64], &out[0]);
+
+        // display both the input state and the permuted output state
+        printf("m/h_in     %s\n", util::btoa(in).c_str());
+        printf("F(state):  %s\n", util::btoa(out).c_str());
+    }
+
     foreach (const string &msg, cl.get_strv("p-permute")) {
         // convert the hex string to a byte sequence and perform the permutation
         vector<uint8_t> out(64), in = util::atob(msg);

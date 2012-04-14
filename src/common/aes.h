@@ -31,20 +31,25 @@ extern int sbox_inv[256];
 /// Compute each of the 10 subkeys for the specified encryption key.
 void key_schedule(uint8_t *sk, int rounds);
 
-/// Generate a masked byte substitution table -- table[i + m'] = sbox[i] + m
-void mask_sbox(const int *tab_in, int *tab_out, uint8_t m, uint8_t mt);
-
 /// Perform an AES128 encryption operation on the specified plaintext.
 void encrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct);
-
-/// Perform a masked AES128 encryption operation on the specified plaintext.
-void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct, uint8_t m);
 
 /// Perform an AES128 decryption operation on the specified ciphertext.
 void decrypt(const uint8_t *ct, const uint8_t *sk, uint8_t *pt);
 
+/// Generate masked state from the input state.
+void mask_state(const uint8_t *state_in, uint8_t *state_out, uint8_t mask);
+
+/// Generate a masked byte substitution table -- table[i + m'] = sbox[i] + m
+void mask_sbox(const int *sbox_in, int *sbox_out, uint8_t m_in, uint8_t m_out);
+
+/// Perform a masked AES128 encryption operation on the specified plaintext.
+void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct,
+                  uint8_t mask_in, uint8_t mask_out);
+
 /// Perform a masked AES128 decryption operation on the specified ciphertext.
-void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt, uint8_t m);
+void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt,
+                  uint8_t mask_in, uint8_t mask_out);
 
 }; // namespace aes
 

@@ -14,23 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <cstdio>
 #include "aes.h"
 #include "crypto.h"
 #include "utility.h"
 
 namespace aes {
 
-int rcon[10] = {
-    0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36
-};
+int rcon[10] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36 };
 
-int shift[16] = {
-    0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11
-};
+int shift[16] = { 0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11 };
 
-int shift_inv[16] = {
-    0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3
-};
+int shift_inv[16] = { 0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3 };
 
 int sbox[256] = {
     X_(63, 7C, 77, 7B, F2, 6B, 6F, C5, 30, 01, 67, 2B, FE, D7, AB, 76),
@@ -155,34 +150,6 @@ void encrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
 }
 
 // -----------------------------------------------------------------------------
-void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct, uint8_t m)
-{
-    int mbox[256];
-    uint8_t pm[16], s0[16], *s1 = ct;
-
-    // mask the input state and generate a masked substitution table
-    for (int i = 0; i < 16; ++i) pm[i] = pt[i] ^ m;
-    for (int i = 0; i < 256; ++i) mbox[i ^ m] = sbox[i] ^ m;
-
-    // perform the rest of the encryption as usual
-    add_round_key(pm, s0, sk);
-
-    for (int round = 1; round < 10; ++round) {
-        sub_bytes(mbox, s0, s1);
-        shift_rows(s1, s0);
-        mix_columns(s0, s1);
-        add_round_key(s1, s0, &sk[round * 16]);
-    }
-
-    sub_bytes(mbox, s0, s1);
-    shift_rows(s1, s0);
-    add_round_key(s0, s1, &sk[10 * 16]);
-
-    // unmask the output state
-    for (int i = 0; i < 16; ++i) s1[i] ^= m;
-}
-
-// -----------------------------------------------------------------------------
 void decrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
 {
     uint8_t s0[16], *s1 = ct;
@@ -201,14 +168,58 @@ void decrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
 }
 
 // -----------------------------------------------------------------------------
-void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt, uint8_t m)
+void mask_state(const uint8_t *state_in, uint8_t *state_out, uint8_t mask)
+{
+    for (int i = 0; i < 16; ++i)
+        state_out[i] = state_in[i] ^ mask;
+}
+
+// -----------------------------------------------------------------------------
+void mask_sbox(const int *sbox_in, int *sbox_out, uint8_t m_in, uint8_t m_out)
+{
+    for (int i = 0; i < 256; ++i)
+        sbox_out[i ^ m_in] = sbox_in[i] ^ m_out;
+}
+
+// -----------------------------------------------------------------------------
+void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct,
+                  uint8_t mask_in, uint8_t mask_out)
+{
+    int mbox[256];
+    uint8_t pm[16], s0[16], *s1 = ct;
+
+    // mask the input state and generate a masked substitution table
+    mask_state(pt, pm, mask_in);
+    mask_sbox(sbox, mbox, mask_in, mask_out);
+
+    // perform the rest of the encryption as usual
+    add_round_key(pm, s0, sk);
+
+    for (int round = 1; round < 10; ++round) {
+        sub_bytes(mbox, s0, s1);
+        shift_rows(s1, s0);
+        mix_columns(s0, s1);
+        add_round_key(s1, s0, &sk[round * 16]);
+    }
+
+    sub_bytes(mbox, s0, s1);
+    shift_rows(s1, s0);
+    add_round_key(s0, s1, &sk[10 * 16]);
+
+    // unmask the output state
+    mask_state(s1, s1, mask_out);
+}
+
+// -----------------------------------------------------------------------------
+void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt,
+                  uint8_t mask_in, uint8_t mask_out)
 {
     int mbox[256];
     uint8_t pm[16], s0[16], *s1 = pt;
 
     // mask the input state and generate a masked substitution table
-    for (int i = 0; i < 16; ++i) pm[i] = ct[i] ^ m;
-    for (int i = 0; i < 256; ++i) mbox[i ^ m] = sbox_inv[i] ^ m;
+    mask_state(ct, pm, mask_in);
+    mask_sbox(sbox, mbox, mask_in, mask_out);
 
     // perform the rest of the encryption as usual
     add_round_key(pm, s0, &sk[10 * 16]);
@@ -225,7 +236,7 @@ void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt, uint8_t m)
     add_round_key(s0, s1, sk);
 
     // unmask the output state
-    for (int i = 0; i < 16; ++i) s1[i] ^= m;
+    mask_state(s1, s1, mask_out);
 }
 
 }; // namespace aes
