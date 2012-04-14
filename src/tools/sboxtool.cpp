@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include <algorithm>
 #include <cstdio>
 #include "cmdline.h"
 #include "utility.h"
@@ -29,11 +30,11 @@ void print_masked_sbox(uint8_t mask, bool decimal)
     aes::mask_sbox(aes::sbox, masked_sbox, mask, mask);
 
     printf("const logic [7:0] sbox_%02X[0:255] = '{", mask);
-    for (int i = 0; i < 256; ++i) {
+    for (int i = 0; i < 255; ++i) {
         if (0 == i % 16) printf("\n  ");
         printf("'h%02X, ", masked_sbox[i]);
     }
-    printf("\n};\n");
+    printf("'h%02X\n};\n", masked_sbox[255]);
 }
 
 // -----------------------------------------------------------------------------
@@ -69,9 +70,13 @@ int main(int argc, char *argv[])
     }
 
     // print out the specified number of randomly masked sboxes
-    for (int i = 0; i < cl.get_long("rand-masks"); i++)
-        print_masked_sbox(rand() % 255, cl.get_flag("dec"));
+    vector<uint8_t> unique_random;
+    for (int i = 0; i < 256; i++) unique_random.push_back(i);
+    random_shuffle(unique_random.begin(), unique_random.end());
 
+    const int num_random_masks = min(256L, cl.get_long("rand-masks"));
+    for (int i = 0; i < num_random_masks; i++)
+        print_masked_sbox(unique_random[i], cl.get_flag("dec"));
 
     return 0;
 }
