@@ -88,6 +88,9 @@ std::string concat_name(const std::string &dir, const std::string &name);
 // Concatenate the specified directory, filename, and extension.
 std::string concat_name(const std::string &dir, const std::string &name, const std::string &ext);
 
+// Split the input string using whitespace as delimiter.
+std::vector<std::string> split(const std::string &str);
+
 // Split the input string given a string of delimiters.
 std::vector<std::string> split(const std::string &str, const std::string &del);
 

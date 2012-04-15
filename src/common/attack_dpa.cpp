@@ -175,9 +175,8 @@ template <typename real>
 void attack_dpa<real>::coalesce(attack_instance *inst)
 {
     attack_dpa *other = (attack_dpa *)inst;
-
-    assert(m_guesses != other->m_guesses);
-    assert(m_nevents != other->m_nevents);
+    assert(m_guesses == other->m_guesses);
+    assert(m_nevents == other->m_nevents);
 
     for (int k = 0; k < m_guesses; ++k) {
         // accumulate bin sizes

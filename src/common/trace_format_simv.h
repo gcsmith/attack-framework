@@ -26,7 +26,7 @@ public:
     bool open(const std::string &path, const std::string &key, bool ct);
     void close();
     bool read(trace &pt, const trace::time_range &range);
-    size_t trace_count(void) { return m_records.size(); }
+    size_t trace_count(void) { return m_records.size() - 1; }
     const trace::event_set &events(void) { return m_events; }
 
 protected:
@@ -37,12 +37,15 @@ protected:
         std::string text;  // plaintext or ciphertext
     };
 
-    void scan_events(void);
+    bool read_sim_timestamps(const std::string &path, bool ct);
+    bool read_sim_waveforms(const std::string &path);
+    void read_waveform_header(std::istream &fin);
+    void read_waveform_samples(std::istream &fin, std::ostream &fout);
 
     trace::event_set    m_events;
     std::vector<record> m_records;
-    std::ifstream       m_wav_in;
     std::string         m_line;
+    std::ifstream       m_wav_in;
     unsigned long       m_current;
     long long           m_index;
 };

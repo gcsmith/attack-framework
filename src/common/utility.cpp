@@ -131,6 +131,15 @@ string concat_name(const string &dir, const string &name, const string &ext)
 }
 
 // -----------------------------------------------------------------------------
+vector<string> split(const string &str)
+{
+    vector<string> tok;
+    const string tstr = boost::trim_copy(str);
+    boost::split(tok, tstr, boost::is_any_of(" \t"), boost::token_compress_on);
+    return tok;
+}
+
+// -----------------------------------------------------------------------------
 vector<string> split(const string &str, const string &delim)
 {
     vector<string> tok;
