@@ -4,13 +4,23 @@
 # Created: 08/29/2011
 # -----------------------------------------------------------------------------
 
-find_package(Boost 1.46.1 COMPONENTS filesystem program_options system thread)
+enable_testing()
+include(CTest)
+
+find_package(Boost 1.46.1 COMPONENTS filesystem program_options system thread unit_test_framework)
 
 set(test_libs
     common
     rt
     ${Boost_LIBRARIES}
 )
+
+# ------------------------------------------------------------------------------
+project(aes_test_vectors)
+
+add_executable(aes_test_vectors aes_test_vectors.cpp ${common_hdr})
+target_link_libraries(aes_test_vectors ${test_libs})
+add_test(aes_test_vectors ${CMAKE_CURRENT_BINARY_DIR}/aes_test_vectors)
 
 # ------------------------------------------------------------------------------
 project(sample_and_hold)
