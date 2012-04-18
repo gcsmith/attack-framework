@@ -28,7 +28,8 @@ int main(int argc, char *argv[])
     // build and parse the table of command line arguments
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
-        { CL_STRV, "input,i",     "specify the message to hash" },
+        { CL_STRV, "ascii-msg,a", "specify the message to hash as ASCII" },
+        { CL_STRV, "hex-msg,h",   "specify the message to hash as hex number" },
         { CL_STRV, "compress,c",  "specify the message block to compress" },
         { CL_STRV, "p-permute,p", "specify the message block to p-permute" },
         { CL_STRV, "q-permute,q", "specify the message block to q-permute" },
@@ -43,7 +44,17 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    foreach (const string &msg, cl.get_strv("input")) {
+    foreach (const string &msg, cl.get_strv("ascii-msg")) {
+        // convert the ASCII string to a byte sequence and perform the hash
+        vector<uint8_t> out, in(msg.begin(), msg.end());
+        grostl::hash(in, out);
+
+        // display both the input message and the output digest
+        printf("message: %s\n", util::btoa(in).c_str());
+        printf("digest:  %s\n", util::btoa(out).c_str());
+    }
+
+    foreach (const string &msg, cl.get_strv("hex-msg")) {
         // convert the hex string to a byte sequence and perform the hash
         vector<uint8_t> out, in = util::atob(msg);
         grostl::hash(in, out);

@@ -1,3 +1,19 @@
+// dpa framework - a collection of tools for differential power analysis
+// Copyright (C) 2011  Garrett C. Smith
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 #define BOOST_TEST_MODULE aes
 
 #include <iostream>
@@ -19,6 +35,7 @@ static struct {
     { "000102030405060708090a0b0c0d0e0f", "00112233445566778899aabbccddeeff", "69c4e0d86a7b0430d8cdb78070b4c55a" },
 };
 
+// -----------------------------------------------------------------------------
 // test encryption with no masking countermeasure
 BOOST_AUTO_TEST_CASE(aes_test_encrypt)
 {
@@ -39,6 +56,7 @@ BOOST_AUTO_TEST_CASE(aes_test_encrypt)
     }
 }
 
+// -----------------------------------------------------------------------------
 // test decryption with no masking countermeasure
 BOOST_AUTO_TEST_CASE(aes_test_decrypt)
 {
@@ -59,6 +77,7 @@ BOOST_AUTO_TEST_CASE(aes_test_decrypt)
     }
 }
 
+// -----------------------------------------------------------------------------
 // test encryption with simple one byte mask, where imask == omask
 BOOST_AUTO_TEST_CASE(aes_test_encrypt_simple_mask_1)
 {
@@ -80,6 +99,7 @@ BOOST_AUTO_TEST_CASE(aes_test_encrypt_simple_mask_1)
     }
 }
 
+// -----------------------------------------------------------------------------
 // test decryption with simple one byte mask, where imask == omask
 BOOST_AUTO_TEST_CASE(aes_test_decrypt_simple_mask_1)
 {
@@ -101,6 +121,7 @@ BOOST_AUTO_TEST_CASE(aes_test_decrypt_simple_mask_1)
     }
 }
 
+// -----------------------------------------------------------------------------
 // test encryption with simple one byte mask, where imask != omask
 BOOST_AUTO_TEST_CASE(aes_test_encrypt_simple_mask_2)
 {
@@ -123,6 +144,7 @@ BOOST_AUTO_TEST_CASE(aes_test_encrypt_simple_mask_2)
     }
 }
 
+// -----------------------------------------------------------------------------
 // test decryption with simple one byte mask, where imask != omask
 BOOST_AUTO_TEST_CASE(aes_test_decrypt_simple_mask_2)
 {

@@ -31,6 +31,8 @@
 
 #define foreach BOOST_FOREACH
 
+#define NUM_ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
+
 #ifdef ENABLE_BENCHMARK
 
 #define BENCHMARK_DECLARE(n)                                                   \
@@ -102,6 +104,13 @@ std::string &trim(std::string &str);
 
 // Returns true if the specified path is a directory.
 bool is_dir(const std::string &path);
+
+// Return x % m, where x may be negative
+inline int mod(int x, int m)
+{
+    int r = x % m;
+    return (r >= 0) ? r : r + m;
+}
 
 // Reverse the bits in a variable length integer.
 inline int revb(int x, int bits)

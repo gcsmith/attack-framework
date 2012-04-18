@@ -30,24 +30,16 @@ namespace grostl {
 // Perform the AddRoundConstant step for the P permutation
 void add_round_const_p(const uint8_t *in, int round, uint8_t *out)
 {
-    for (int i = 0; i < 64; ++i) {
-        if ((i & 7) == 0)
-            out[i] = in[i] ^ ((i << 1) ^ round);
-        else
-            out[i] = in[i];
-    }
+    for (int i = 0; i < 64; ++i)
+        out[i] = (i & 7) ? in[i] : in[i] ^ ((i << 1) ^ round);
 }
 
 // -----------------------------------------------------------------------------
 // Perform the AddRoundConstant step for the Q permutation
 void add_round_const_q(const uint8_t *in, int round, uint8_t *out)
 {
-    for (int i = 0; i < 64; ++i) {
-        if ((i & 7) == 7)
-            out[i] = in[i] ^ (((i & ~7) << 1) ^ 0xFF ^ round);
-        else
-            out[i] = in[i] ^ 0xFF;
-    }
+    for (int i = 0; i < 64; ++i)
+        out[i] = ((~i & 7) ? in[i] : in[i] ^ (((i & ~7) << 1) ^ round)) ^ 0xFF;
 }
 
 // -----------------------------------------------------------------------------
@@ -173,19 +165,24 @@ void output_transform(const uint8_t *msg, uint8_t *out)
 // -----------------------------------------------------------------------------
 void hash(const vector<uint8_t> &in, vector<uint8_t> &out)
 {
-    // TODO
-    vector<uint8_t> state(64, 0), chain(64, 0), fout(64, 0);
-    state.resize(64);
-    state[0] = in[0];
-    state[1] = in[1];
-    state[2] = in[2];
-    state[3] = 0x80;
-    state[63] = 0x01;
-    chain[62] = 0x01;
+    vector<uint8_t> state(in), chain(64, 0);
+    chain[62] = 0x01; // IV
+
+    int N = (int)in.size() << 3;
+    int w = util::mod(-N - 65, 512);
+    int wb = (w + 1) >> 3;
+    uint64_t r = (N + w + 65) >> 9;
+
+    // insert padding bytes
+    for (int i = 0; i < wb; i++) state.push_back(i ? 0x00 : 0x80);
+    for (int i = 7; i >= 0; i--) state.push_back((r >> (i << 3)) & 0xFF);
+
+    // compute hash
+    for (size_t i = 0; i < state.size(); i += 64)
+        compress(&state[i], &chain[0], &chain[0]);
 
     out.resize(32);
-    compress(&state[0], &chain[0], &fout[0]);
-    output_transform(&fout[0], &out[0]);
+    output_transform(&chain[0], &out[0]);
 }
 
 };
