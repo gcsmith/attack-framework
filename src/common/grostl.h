@@ -31,6 +31,10 @@ void permute_q(const uint8_t *in, uint8_t *out);
 // Grostl-256 compression function.
 void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out);
 
+// Grostl-256 compression function.
+void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out,
+              const uint8_t *imask, const uint8_t *omask);
+
 /// Compute the Grostl-256 hash of the input message.
 void hash(const std::vector<uint8_t> &in, std::vector<uint8_t> &out);
 

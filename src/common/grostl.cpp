@@ -51,6 +51,13 @@ void sub_bytes(const uint8_t *in, uint8_t *out)
 }
 
 // -----------------------------------------------------------------------------
+void sub_bytes_masked(const int tab[64][256], const uint8_t *in, uint8_t *out)
+{
+    for (int i = 0; i < 64; ++i)
+        out[i] = tab[i][in[i]];
+}
+
+// -----------------------------------------------------------------------------
 // Perform the ShiftBytes step for the P permutation
 void shift_bytes_p(const uint8_t *in, uint8_t *out)
 {
@@ -96,6 +103,13 @@ void mix_bytes(const uint8_t *in, uint8_t *out)
 }
 
 // -----------------------------------------------------------------------------
+void xor_bytes(const uint8_t *in, uint8_t *out, const uint8_t *mask)
+{
+    for (int i = 0; i < 64; ++i)
+        out[i] = in[i] ^ mask[i];
+}
+
+// -----------------------------------------------------------------------------
 void permute_p(const uint8_t *in, uint8_t *out)
 {
     uint8_t temp[64];
@@ -134,9 +148,6 @@ void permute_q(const uint8_t *in, uint8_t *out)
 // -----------------------------------------------------------------------------
 void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out)
 {
-    printf("chain: %s\n", util::btoa(chain, 64).c_str());
-    printf("msg:   %s\n", util::btoa(msg, 64).c_str());
-
     uint8_t hm[64], p[64], q[64];
     for (int i = 0; i < 64; ++i)
         hm[i] = msg[i] ^ chain[i];
@@ -144,13 +155,55 @@ void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out)
     permute_p(hm, p);
     permute_q(msg, q);
 
-    printf("p_out:   %s\n", util::btoa(p, 64).c_str());
-    printf("q_out:   %s\n", util::btoa(q, 64).c_str());
-
     for (int i = 0; i < 64; ++i)
         out[i] = chain[i] ^ p[i] ^ q[i];
+}
 
-    printf("f_out:   %s\n", util::btoa(out, 64).c_str());
+// -----------------------------------------------------------------------------
+void compress(const uint8_t *msg, const uint8_t *chain, uint8_t *out,
+              const uint8_t *imask, const uint8_t *omask)
+{
+    int mbox[64][256];
+    uint8_t msg_mask[64], hm_mask[64], p[64], q[64], x2[64], x3[64], x4[64];
+
+    // compute the masked sbox for each byte
+    for (int i = 0; i < 64; i++)
+        aes::mask_sbox(aes::sbox, mbox[i], imask[i], omask[i]);
+
+    // apply input mask to msg, then compute msg ^ chain
+    xor_bytes(msg, msg_mask, imask);
+    xor_bytes(chain, hm_mask, msg_mask);
+
+    // compute intermediate masks, then perform p-permutation
+    shift_bytes_p(omask, x2);
+    mix_bytes(x2, x3);
+    xor_bytes(x3, x4, imask);
+
+    memcpy(p, hm_mask, 64);
+    for (int round = 0; round < 10; ++round) {
+        add_round_const_p(p, round, out);       // -> state ^ x0
+        sub_bytes_masked(mbox, out, p);         // -> state ^ x1
+        shift_bytes_p(p, out);                  // -> state ^ x2
+        mix_bytes(out, p);                      // -> state ^ x3
+        xor_bytes(p, p, x4);                    // -> state ^ x0
+    }
+
+    // compute intermediate masks, then perform q-permutation
+    shift_bytes_q(omask, x2);
+    mix_bytes(x2, x3);
+    xor_bytes(x3, x4, imask);
+
+    memcpy(q, msg_mask, 64);
+    for (int round = 0; round < 10; ++round) {
+        add_round_const_q(q, round, out);       // -> state ^ x0
+        sub_bytes_masked(mbox, out, q);         // -> state ^ x1
+        shift_bytes_q(q, out);                  // -> state ^ x2
+        mix_bytes(out, q);                      // -> state ^ x3
+        xor_bytes(q, q, x4);                    // -> state ^ x0
+    }
+
+    for (int i = 0; i < 64; ++i)
+        out[i] = chain[i] ^ p[i] ^ q[i];        // -> state
 }
 
 // -----------------------------------------------------------------------------
@@ -163,21 +216,26 @@ void output_transform(const uint8_t *msg, uint8_t *out)
 }
 
 // -----------------------------------------------------------------------------
-void hash(const vector<uint8_t> &in, vector<uint8_t> &out)
+void pad_message(vector<uint8_t> &msg)
 {
-    vector<uint8_t> state(in), chain(64, 0);
-    chain[62] = 0x01; // IV
-
-    int N = (int)in.size() << 3;
+    int N = (int)msg.size() << 3;
     int w = util::mod(-N - 65, 512);
     int wb = (w + 1) >> 3;
     uint64_t r = (N + w + 65) >> 9;
 
     // insert padding bytes
-    for (int i = 0; i < wb; i++) state.push_back(i ? 0x00 : 0x80);
-    for (int i = 7; i >= 0; i--) state.push_back((r >> (i << 3)) & 0xFF);
+    for (int i = 0; i < wb; i++) msg.push_back(i ? 0x00 : 0x80);
+    for (int i = 7; i >= 0; i--) msg.push_back((r >> (i << 3)) & 0xFF);
+}
+
+// -----------------------------------------------------------------------------
+void hash(const vector<uint8_t> &in, vector<uint8_t> &out)
+{
+    vector<uint8_t> state(in), chain(64, 0);
+    chain[62] = 0x01; // IV
 
     // compute hash
+    pad_message(state);
     for (size_t i = 0; i < state.size(); i += 64)
         compress(&state[i], &chain[0], &chain[0]);
 

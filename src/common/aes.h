@@ -44,12 +44,14 @@ void mask_state(const uint8_t *state_in, uint8_t *state_out, uint8_t mask);
 void mask_sbox(const int *sbox_in, int *sbox_out, uint8_t m_in, uint8_t m_out);
 
 /// Perform a masked AES128 encryption operation on the specified plaintext.
-void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct,
-                  uint8_t mask_in, uint8_t mask_out);
+void encrypt_mask_simple(const uint8_t *pt, const uint8_t *sk, uint8_t *ct,
+                         uint8_t imask, uint8_t omask);
 
 /// Perform a masked AES128 decryption operation on the specified ciphertext.
-void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt,
-                  uint8_t mask_in, uint8_t mask_out);
+void decrypt_mask_simple(const uint8_t *ct, const uint8_t *sk, uint8_t *pt,
+                         uint8_t imask, uint8_t omask);
+
+void encrypt_mask_full(const uint8_t *pt, const uint8_t *sk, uint8_t *ct);
 
 }; // namespace aes
 

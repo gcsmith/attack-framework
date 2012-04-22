@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(aes_test_encrypt_simple_mask_1)
 
         uint8_t mask = rand() % 256;
         aes::key_schedule(sk, 10);
-        aes::encrypt_mask(pt, sk, out, mask, mask);
+        aes::encrypt_mask_simple(pt, sk, out, mask, mask);
         
         const std::string ct_str = util::btoa(out, 16);
         const std::string ct_vec = aes_test_vectors[i].ct;
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(aes_test_decrypt_simple_mask_1)
 
         uint8_t mask = rand() % 256;
         aes::key_schedule(sk, 10);
-        aes::decrypt_mask(ct, sk, out, mask, mask);
+        aes::decrypt_mask_simple(ct, sk, out, mask, mask);
         
         const std::string pt_str = util::btoa(out, 16);
         const std::string pt_vec = aes_test_vectors[i].pt;
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(aes_test_encrypt_simple_mask_2)
         uint8_t imask = rand() % 256;
         uint8_t omask = rand() % 256;
         aes::key_schedule(sk, 10);
-        aes::encrypt_mask(pt, sk, out, imask, omask);
+        aes::encrypt_mask_simple(pt, sk, out, imask, omask);
         
         const std::string ct_str = util::btoa(out, 16);
         const std::string ct_vec = aes_test_vectors[i].ct;
@@ -157,13 +157,34 @@ BOOST_AUTO_TEST_CASE(aes_test_decrypt_simple_mask_2)
         uint8_t imask = rand() % 256;
         uint8_t omask = rand() % 256;
         aes::key_schedule(sk, 10);
-        aes::decrypt_mask(ct, sk, out, imask, omask);
+        aes::decrypt_mask_simple(ct, sk, out, imask, omask);
         
         const std::string pt_str = util::btoa(out, 16);
         const std::string pt_vec = aes_test_vectors[i].pt;
 
         BOOST_CHECK( pt_str.size() == 32 );
         BOOST_CHECK( pt_str == boost::to_upper_copy(pt_vec) );
+    }
+}
+
+// -----------------------------------------------------------------------------
+// test encryption with simple one byte mask, where imask != omask
+BOOST_AUTO_TEST_CASE(aes_test_encrypt_full_mask)
+{
+    uint8_t pt[16], out[16], sk[16 * 11];
+
+    for (size_t i = 0; i < NUM_ELEMENTS(aes_test_vectors); i++) {
+        BOOST_CHECK( util::atob(aes_test_vectors[i].key, sk, 16) );
+        BOOST_CHECK( util::atob(aes_test_vectors[i].pt,  pt, 16) );
+
+        aes::key_schedule(sk, 10);
+        aes::encrypt_mask_full(pt, sk, out);
+        
+        const std::string ct_str = util::btoa(out, 16);
+        const std::string ct_vec = aes_test_vectors[i].ct;
+
+        BOOST_CHECK( ct_str.size() == 32 );
+        BOOST_CHECK( ct_str == boost::to_upper_copy(ct_vec) );
     }
 }
 

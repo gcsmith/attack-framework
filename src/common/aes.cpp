@@ -97,6 +97,13 @@ void sub_bytes(const int *tab, const uint8_t *in, uint8_t *out)
 }
 
 // -----------------------------------------------------------------------------
+void sub_bytes_masked(const int tab[16][256], const uint8_t *in, uint8_t *out)
+{
+    for (int i = 0; i < 16; ++i)
+        out[i] = tab[i][in[i]];
+}
+
+// -----------------------------------------------------------------------------
 void shift_rows(const uint8_t *in, uint8_t *out)
 {
     for (int i = 0; i < 16; ++i)
@@ -132,10 +139,17 @@ void mix_columns_inv(const uint8_t *in, uint8_t *out)
 }
 
 // -----------------------------------------------------------------------------
-void mask_state(const uint8_t *state_in, uint8_t *state_out, uint8_t mask)
+void xor_state(const uint8_t *in, uint8_t *out, uint8_t mask)
 {
     for (int i = 0; i < 16; ++i)
-        state_out[i] = state_in[i] ^ mask;
+        out[i] = in[i] ^ mask;
+}
+
+// -----------------------------------------------------------------------------
+void xor_state(const uint8_t *in, uint8_t *out, uint8_t *mask)
+{
+    for (int i = 0; i < 16; ++i)
+        out[i] = in[i] ^ mask[i];
 }
 
 // -----------------------------------------------------------------------------
@@ -182,63 +196,100 @@ void decrypt(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
 }
 
 // -----------------------------------------------------------------------------
-void encrypt_mask(const uint8_t *pt, const uint8_t *sk, uint8_t *ct,
-                  uint8_t mask_in, uint8_t mask_out)
+void encrypt_mask_simple(const uint8_t *pt, const uint8_t *sk, uint8_t *ct,
+                         uint8_t imask, uint8_t omask)
 {
     int mbox[256];
     uint8_t pm[16], s0[16], *s1 = ct;
 
     // mask the input state and generate a masked substitution table
-    mask_state(pt, pm, mask_in);                    // -> state ^ mask_in
-    mask_sbox(sbox, mbox, mask_in, mask_out);
+    xor_state(pt, pm, imask);                       // -> state ^ imask
+    mask_sbox(sbox, mbox, imask, omask);
 
     // perform the rest of the encryption as usual
     add_round_key(pm, s0, sk);
 
     for (int round = 1; round < 10; ++round) {
-        sub_bytes(mbox, s0, s1);                    // -> state ^ mask_out
+        sub_bytes(mbox, s0, s1);                    // -> state ^ omask
         shift_rows(s1, s0);
         mix_columns(s0, s1);
         add_round_key(s1, s0, &sk[round * 16]);
-        mask_state(s0, s0, mask_in ^ mask_out);     // -> state ^ mask_in
+        xor_state(s0, s0, imask ^ omask);           // -> state ^ imask
     }
 
-    sub_bytes(mbox, s0, s1);                        // -> state ^ mask_out
+    sub_bytes(mbox, s0, s1);                        // -> state ^ omask
     shift_rows(s1, s0);
     add_round_key(s0, s1, &sk[10 * 16]);
 
     // unmask the output state
-    mask_state(s1, s1, mask_out);                   // -> state
+    xor_state(s1, s1, omask);                       // -> state
 }
 
 // -----------------------------------------------------------------------------
-void decrypt_mask(const uint8_t *ct, const uint8_t *sk, uint8_t *pt,
-                  uint8_t mask_in, uint8_t mask_out)
+void decrypt_mask_simple(const uint8_t *ct, const uint8_t *sk, uint8_t *pt,
+                         uint8_t imask, uint8_t omask)
 {
     int mbox[256];
     uint8_t pm[16], s0[16], *s1 = pt;
 
     // mask the input state and generate a masked substitution table
-    mask_state(ct, pm, mask_in);                    // -> state ^ mask_in
-    mask_sbox(sbox_inv, mbox, mask_in, mask_out);
+    xor_state(ct, pm, imask);                       // -> state ^ imask
+    mask_sbox(sbox_inv, mbox, imask, omask);
 
     // perform the rest of the encryption as usual
     add_round_key(pm, s0, &sk[10 * 16]);
 
     for (int round = 9; round > 0; --round) {
         shift_rows_inv(s0, s1);
-        sub_bytes(mbox, s1, s0);                    // -> state ^ mask_out
+        sub_bytes(mbox, s1, s0);                    // -> state ^ omask
         add_round_key(s0, s1, &sk[round * 16]);
         mix_columns_inv(s1, s0);
-        mask_state(s0, s0, mask_in ^ mask_out);     // -> state ^ mask_in
+        xor_state(s0, s0, imask ^ omask);           // -> state ^ imask
     }
 
     shift_rows_inv(s0, s1);
-    sub_bytes(mbox, s1, s0);                        // -> state ^ mask_out
+    sub_bytes(mbox, s1, s0);                        // -> state ^ omask
     add_round_key(s0, s1, sk);
 
     // unmask the output state
-    mask_state(s1, s1, mask_out);                   // -> state
+    xor_state(s1, s1, omask);                       // -> state
+}
+
+// -----------------------------------------------------------------------------
+void encrypt_mask_full(const uint8_t *pt, const uint8_t *sk, uint8_t *ct)
+{
+    int mbox[16][256];
+    uint8_t pm[16], s0[16], *s1 = ct;
+
+    uint8_t x0[16], x1[16], x2[16], x3[16], x4[16];
+    for (int i = 0; i < 16; i++) {
+        x0[i] = rand() % 256;
+        x1[i] = rand() % 256;
+        mask_sbox(sbox, mbox[i], x0[i], x1[i]);
+    }
+
+    shift_rows(x1, x2);
+    mix_columns(x2, x3);
+    xor_state(x3, x4, x0);
+
+    // mask the input state and generate a masked substitution table
+    xor_state(pt, pm, x0);                          // -> state ^ x0
+    add_round_key(pm, s0, sk);
+
+    for (int round = 1; round < 10; ++round) {
+        sub_bytes_masked(mbox, s0, s1);             // -> state ^ x1
+        shift_rows(s1, s0);                         // -> state ^ x2
+        mix_columns(s0, s1);                        // -> state ^ x3
+        add_round_key(s1, s0, &sk[round * 16]);
+        xor_state(s0, s0, x4);                      // -> state ^ x0
+    }
+
+    sub_bytes_masked(mbox, s0, s1);                 // -> state ^ x1
+    shift_rows(s1, s0);                             // -> state ^ x2
+    add_round_key(s0, s1, &sk[10 * 16]);
+
+    // unmask the output state
+    xor_state(s1, s1, x2);                          // -> state
 }
 
 }; // namespace aes
