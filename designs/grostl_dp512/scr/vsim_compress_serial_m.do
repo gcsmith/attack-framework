@@ -8,14 +8,14 @@ vmap work work
 vlog rtl/grostl_add_constant.sv
 vlog rtl/grostl_add_constant_p.sv
 vlog rtl/grostl_add_constant_q.sv
-vlog rtl/grostl_compress_serial.sv
+vlog rtl/grostl_compress_serial_m.sv
 vlog rtl/grostl_mix_bytes.sv
-vlog rtl/grostl_sbox_lut.sv
+vlog rtl/grostl_sbox_masked.sv
 vlog rtl/grostl_shift_bytes.sv
 vlog rtl/grostl_shift_bytes_p.sv
 vlog rtl/grostl_shift_bytes_q.sv
-vlog rtl/grostl_sub_bytes.sv
-vlog tb/test_compress_serial.sv
+vlog rtl/grostl_sub_bytes_m.sv
+vlog tb/test_compress_serial_m.sv
 
 # invoke the simulator
 
@@ -34,6 +34,8 @@ add wave -noupdate -divider
 add wave -noupdate -format Literal -radix Hexadecimal -label "round" /testbench/round
 add wave -noupdate -format Literal -radix Hexadecimal -label "m_in" /testbench/h_in
 add wave -noupdate -format Literal -radix Hexadecimal -label "h_in" /testbench/m_in
+add wave -noupdate -format Literal -radix Hexadecimal -label "imask" /testbench/imask
+add wave -noupdate -format Literal -radix Hexadecimal -label "omask" /testbench/omask
 add wave -noupdate -format Literal -radix Hexadecimal -label "dout" /testbench/dout
 add wave -noupdate -divider
 

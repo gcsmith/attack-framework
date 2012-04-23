@@ -1,6 +1,6 @@
 UIET ?= 0
 AMD64 ?= 0
-UNIT ?= permute_p
+UNIT ?= compress_serial
 
 ifeq ($(QUIET), 1)
     CLOG = compile.log &>/dev/null

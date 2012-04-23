@@ -21,12 +21,12 @@ module testbench;
   logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_pq = 0;
   logic   [1:0] sel_m = 0;
   logic   [3:0] round = 0;
-  logic [511:0] m_in = 0, h_in = 0, dout;
+  logic [511:0] m_in = '0, h_in = '0, imask = '0, omask = '0, dout;
   int fp_sim;
 
   // instantiate the DUT
-  grostl_compress_serial dut(clk, wr_m, wr_h, sel_m, sel_h, sel_pq,
-                             round, m_in, h_in, dout);
+  grostl_compress_serial_m dut(clk, wr_m, wr_h, sel_m, sel_h, sel_pq,
+                               round, m_in, h_in, imask, omask, dout);
 
   // invert the clock signal every 20 ns (25 MHz)
   always #20 clk = ~clk;
@@ -34,6 +34,8 @@ module testbench;
   class iteration_state;
     rand bit [511:0] msg;
     rand bit [511:0] chain;
+    rand bit [511:0] imask;
+    rand bit [511:0] omask;
   endclass
 
   task drive(input logic [3:0] rnd, wm, wh, logic [1:0] sm, logic sh, logic pq);
@@ -62,6 +64,8 @@ module testbench;
       // initialize the permute function with a 512-bit message block
       m_in = msg.msg;
       h_in = msg.chain;
+      imask = msg.imask;
+      omask = msg.omask;
 
       drive(0, 1, 1, 2'b00, 0, 0); // 0: latch H & M
       drive(0, 1, 0, 2'b10, 0, 1); // 1: Q-S1, M^=H
