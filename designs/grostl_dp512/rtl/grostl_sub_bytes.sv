@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module grostl_sub_bytes(input  [0:7][0:7][7:0] din,
-                        output [0:7][0:7][7:0] dout);
+module grostl_sub_bytes(input  [0:63][7:0] din,
+                        output [0:63][7:0] dout);
 
   generate
     for (genvar i = 0; i < 64; i++) begin: gen_sbox
-      grostl_sbox_lut sub_bytes(din[i % 8][i / 8], dout[i % 8][i / 8]);
+      grostl_sbox_lut sub_bytes(din[i], dout[i]);
     end
   endgenerate
 

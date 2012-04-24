@@ -36,7 +36,7 @@ module testbench;
     rand bit [511:0] chain;
   endclass
 
-  task drive(input logic [3:0] rnd, wm, wh, logic [1:0] sm, logic sh, logic pq);
+  task drive(input logic [3:0] rnd, wm, wh, logic [1:0] sm, sh, pq);
     @(posedge clk);
     round = rnd;
     wr_m = wm;
