@@ -16,32 +16,33 @@
 
 module grostl_compress_serial_m(input          clk, wr_m, wr_h,
                                 input    [1:0] sel_m,
-                                input          sel_h, sel_pq,
-                                input    [3:0] round,
-                                input  [511:0] m_in, h_in, imask, omask,
+                                input          sel_h, sel_d, sel_pq,
+                                input    [3:0] rnd,
+                                input    [2:0] col,
+                                input  [511:0] m_in, h_in,
+                                input   [63:0] imask, omask,
                                 output [511:0] dout);
 
-  logic [0:7][0:7][7:0] m_reg, h_reg, p_reg, imask_reg, omask_reg, x2, x3, x4;
-  logic [0:7][0:7][7:0] m_val, h_val, mhxor, s_arc, s_sub, s_shf, s_mix;
+  logic [0:7][0:7][7:0] m_reg, h_reg, p_reg;
+  logic [0:7][0:7][7:0] m_val, h_val, mhxor, s_shf, d_val;
+  logic [0:7][7:0] s_arc, s_sub, s_mix, imask_reg, omask_reg, x3, x4;
 
   // mask computation
-  grostl_shift_bytes m_shf_bytes(omask_reg, ~sel_pq, x2);
-  grostl_mix_bytes   m_mix_bytes(x2, x3);
+  grostl_mix_bytes m_mix_bytes(omask_reg, x3);
   assign x4 = x3 ^ imask_reg;
 
-  // round computation
-  grostl_add_constant pq_add_const(m_reg, sel_pq, round, s_arc);
+  grostl_shift_bytes  pq_shf_bytes(m_reg, sel_pq, s_shf);
+  grostl_add_constant pq_add_const(d_val[0], sel_pq, rnd, col, s_arc);
   grostl_sub_bytes_m  pq_sub_bytes(s_arc, imask_reg, omask_reg, s_sub);
-  grostl_shift_bytes  pq_shf_bytes(p_reg, ~sel_pq, s_shf);
-  grostl_mix_bytes    pq_mix_bytes(s_shf, s_mix);
+  grostl_mix_bytes    pq_mix_bytes(p_reg[0], s_mix);
 
   assign mhxor = m_reg ^ h_reg;
   assign dout  = m_reg;
 
   always_comb case (sel_m)
-    2'b00:   m_val <= m_in ^ imask; // 0: masked message input
-    2'b01:   m_val <= s_mix ^ x4;   // 1: masked round output
-    default: m_val <= mhxor;        // 2: m xor h
+    2'b00:   m_val <= m_in ^ { 8{imask} };       // 0: masked message input
+    2'b01:   m_val <= { p_reg[1:7], s_mix ^ x4 }; // 1: column-rotated round output
+    default: m_val <= mhxor;                      // 2: m xor h
   endcase
 
   always_comb case (sel_h)
@@ -49,9 +50,14 @@ module grostl_compress_serial_m(input          clk, wr_m, wr_h,
     default: h_val <= mhxor; // 1: m xor h
   endcase
 
-  always_ff @(posedge clk) if (wr_m) m_reg <= m_val; // message register
-  always_ff @(posedge clk) if (wr_h) h_reg <= h_val; // chaining register
-  always_ff @(posedge clk) p_reg <= s_sub;           // pipeline register
+  always_comb case (sel_d)
+    1'b0:    d_val <= m_reg;  // 0: unshifted state (subround)
+    default: d_val <= s_shf;  // 1: shifted state (round start)
+  endcase
+
+  always_ff @(posedge clk) if (wr_m) m_reg <= m_val;       // message register
+  always_ff @(posedge clk) if (wr_h) h_reg <= h_val;       // chaining register
+  always_ff @(posedge clk) p_reg <= { s_sub, d_val[1:7] }; // pipeline register
 
   always_ff @(posedge clk)
       if (sel_m == 2'b00) begin

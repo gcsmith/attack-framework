@@ -37,7 +37,7 @@ module testbench;
     rand bit [511:0] chain;
   endclass
 
-  task drive(logic [3:0] rnd, logic [2:0] col, wm, wh, logic [1:0] sm, sh, sd, pq);
+  task drive(logic [3:0] rnd, logic [2:0] col, logic wm, wh, logic [1:0] sm, logic sh, sd, pq);
     @(posedge clk);
     round = rnd;
     column = col;
@@ -70,6 +70,10 @@ module testbench;
 
       drive(0, 0, 1, 1, 2'b00, 0, 1, 0); // 0: latch H & M
       drive(0, 0, 1, 0, 2'b10, 0, 1, 1); // 1: Q-S1, M^=H
+
+      m_in = 'x;
+      h_in = 'x;
+
       drive(0, 0, 1, 0, 2'b01, 0, 1, 0); // 2: Q-S2, P-S1
 
       for (int c = 1; c < 8; c++) begin
