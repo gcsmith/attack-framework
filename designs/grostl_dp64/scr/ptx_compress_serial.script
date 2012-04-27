@@ -1,0 +1,41 @@
+################################################################################
+# Set the power analysis mode
+################################################################################
+
+set power_enable_analysis   true
+set power_analysis_mode     time_based
+
+################################################################################
+# Set library search path, read in the netlist, and link the design
+################################################################################
+
+set search_path     "lib ."
+set link_library    "* core_typ.db"
+read_verilog        grostl_compress_serial.vg
+current_design      grostl_compress_serial
+link
+
+################################################################################
+# Run timing analysis, read in constraints and switching activity file
+################################################################################
+
+update_timing
+read_sdc lib/grostl_unit.sdc
+read_vcd top.vcd -pipe_exec "vcs -R testbench +vcs+dumpvars+top.vcd" \
+         -strip_path testbench/dut
+
+################################################################################
+# Perform power analysis
+################################################################################
+
+set_power_analysis_options -waveform_format out                 \
+                           -waveform_output power_waveform      \
+                           -waveform_interval .01               \
+                           -include top
+
+check_power
+update_power
+report_power
+report_power -hierarchy
+quit
+

@@ -18,15 +18,16 @@
 `define ITERATIONS 1000
 
 module testbench;
-  logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_pq = 0;
+  logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_d = 0, sel_pq = 0;
   logic   [1:0] sel_m = '0;
   logic   [3:0] round = '0;
-  logic [511:0] m_in = '0, h_in = '0, imask = '0, omask = '0, dout;
+  logic   [2:0] column = '0;
+  logic [511:0] m_in = '0, h_in = '0, dout;
   int fp_sim;
 
   // instantiate the DUT
-  grostl_compress_serial_m dut(clk, wr_m, wr_h, sel_m, sel_h, sel_pq,
-                               round, m_in, h_in, imask, omask, dout);
+  grostl_compress_serial dut(clk, wr_m, wr_h, sel_m, sel_h, sel_d, sel_pq,
+                             round, column, m_in, h_in, dout);
 
   // invert the clock signal every 20 ns (25 MHz)
   always #20 clk = ~clk;
@@ -34,17 +35,17 @@ module testbench;
   class iteration_state;
     rand bit [511:0] msg;
     rand bit [511:0] chain;
-    rand bit [511:0] imask;
-    rand bit [511:0] omask;
   endclass
 
-  task drive(input logic [3:0] rnd, logic wm, wh, logic [1:0] sm, logic sh, pq);
+  task drive(logic [3:0] rnd, logic [2:0] col, logic wm, wh, logic [1:0] sm, logic sh, sd, pq);
     @(posedge clk);
     round = rnd;
+    column = col;
     wr_m = wm;
     wr_h = wh;
     sel_m = sm;
     sel_h = sh;
+    sel_d = sd;
     sel_pq = pq;
   endtask
 
@@ -66,26 +67,33 @@ module testbench;
 
       // initialize the permute function with a 512-bit message block
       m_in = msg.msg;
-      imask = msg.imask;
-      omask = msg.omask;
 
-      drive(0, 1, 1, 2'b00, 0, 0); // 0: latch H & M
-      drive(0, 1, 0, 2'b10, 0, 1); // 1: Q-S1, M^=H
+      // round, column, wr_m, wr_h, sel_m, sel_h, sel_d, sel_pq
+
+      drive(0, 0, 1, 1, 2'b00, 0, 1, 0); // 0: latch H & M
+      drive(0, 0, 1, 0, 2'b10, 0, 1, 1); // 1: Q-S1, M^=H
 
       m_in = 'x;
-      h_in = 'x;
-      imask = 'x;
-      omask = 'x;
 
-      drive(0, 1, 0, 2'b01, 0, 0); // 2: Q-S2, P-S1
+      drive(0, 0, 1, 0, 2'b01, 0, 1, 0); // 2: Q-S2, P-S1
+
+      for (int c = 1; c < 8; c++) begin
+        drive(0, c, 1, 0, 2'b01, 0, 0, 1); // Q-S1, P-S2
+        drive(0, c, 1, 0, 2'b01, 0, 0, 0); // Q-S2, P-S1
+      end
 
 //    for (int r = 1; r < 10; r++) begin
-//      drive(r, 1, 0, 2'b01, 0, 1); // Q-S1, P-S2
-//      drive(r, 1, 0, 2'b01, 0, 0); // Q-S2, P-S1
+//      drive(r, 0, 1, 0, 2'b01, 0, 1, 1); // Q-S1, P-S2
+//      drive(r, 0, 1, 0, 2'b01, 0, 1, 0); // Q-S2, P-S1
+
+//      for (int c = 1; c < 8; c++) begin
+//        drive(r, c, 1, 0, 2'b01, 0, 0, 1); // Q-S1, P-S2
+//        drive(r, c, 1, 0, 2'b01, 0, 0, 0); // Q-S2, P-S1
+//      end
 //    end
 
-//    drive(0, 1, 1, 2'b01, 1, 1); // 21: P-S2, H^=M(Q_out)
-//    drive(0, 1, 1, 2'b10, 1, 0); // 0*: P-S2, H^=M(P_out) (next block)
+//    drive(0, 7, 1, 1, 2'b01, 1, 0, 1); // 21: P-S2, H^=M(Q_out)
+//    drive(0, 0, 1, 1, 2'b10, 1, 0, 0); // 0*: P-S2, H^=M(P_out) (next block)
       @(posedge clk);
 
       // retrieve the output state and write it to the trace file

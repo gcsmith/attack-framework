@@ -19,8 +19,8 @@
 
 module testbench;
   logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_pq = 0;
-  logic   [1:0] sel_m = 0;
-  logic   [3:0] round = 0;
+  logic   [1:0] sel_m = '0;
+  logic   [3:0] round = '0;
   logic [511:0] m_in = '0, h_in = '0, dout;
   int fp_sim;
 
@@ -36,7 +36,7 @@ module testbench;
     rand bit [511:0] chain;
   endclass
 
-  task drive(input logic [3:0] rnd, wm, wh, logic [1:0] sm, logic sh, logic pq);
+  task drive(input logic [3:0] rnd, logic wm, wh, logic [1:0] sm, logic sh, pq);
     @(posedge clk);
     round = rnd;
     wr_m = wm;
@@ -67,6 +67,10 @@ module testbench;
 
       drive(0, 1, 1, 2'b00, 0, 0); // 0: latch H & M
       drive(0, 1, 0, 2'b10, 0, 1); // 1: Q-S1, M^=H
+
+      m_in = 'x;
+      h_in = 'x;
+
       drive(0, 1, 0, 2'b01, 0, 0); // 2: Q-S2, P-S1
 
 //    for (int r = 1; r < 10; r++) begin
