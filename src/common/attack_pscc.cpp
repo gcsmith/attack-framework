@@ -69,8 +69,10 @@ bool attack_pscc::setup(crypto_instance *crypto, const parameters &params)
     if (!params.get("num_events", m_nevents) ||
         !params.get("num_reports", m_nreports) ||
         !params.get("bytes", m_bytes) ||
-        !params.get("offset", m_offset))
+        !params.get("offset", m_offset)) {
+        fprintf(stderr, "missing parameters in attack_cpa\n");
         return false;
+    }
 
     int key_bytes = crypto->key_bits() >> 3;
     vector<uint8_t> key(key_bytes);

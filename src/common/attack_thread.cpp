@@ -56,13 +56,17 @@ void attack_thread::run(void)
     trace pt;
     std::vector<long> mapper;
 
+    // determine correct byte-length of each text and check for erroneous input
+    const size_t text_len = m_crypto->key_bits() >> 3;
+
     while (m_engine->next_trace(m_id, mapper, pt)) {
         // provide the next plaintext/ciphertext to the crypto instance
-        if (!m_crypto->set_message(pt.text())) {
+        if (pt.text().size() != text_len) {
             fprintf(stderr, "[%d] invalid plain/ciphertext specified: %s\n",
                     m_id, util::btoa(pt.text()).c_str());
             return;
         }
+        m_crypto->set_message(pt.text());
 
         // run the attack algorithm on the next set of samples
         m_attack->process(mapper, pt);

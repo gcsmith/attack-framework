@@ -17,30 +17,34 @@
 #include <cassert>
 #include "attack_manager.h"
 #include "aes.h"
+#include "grostl.h"
 
-class crypto_aes_hw_r10: public crypto_instance {
+class crypto_grostl_dp64_hd_r0: public crypto_instance {
 public:
     virtual void set_message(const std::vector<uint8_t> &msg) {
-        assert(msg.size() == 16);
+        assert(msg.size() == 64);
         m_msg = msg;
     }
 
     virtual void set_key(const std::vector<uint8_t> &key) {
-        assert(key.size() == 16);
+        assert(key.size() == 64);
         m_key = key;
     }
 
     virtual int extract_estimate(int n) {
-        assert(n < 16);
+        assert(n < 64);
         return m_key[n];
     }
 
     virtual int compute(int n, int k) {
-        assert(n < 16 && k < 256);
-        return aes::sbox_inv[m_msg[aes::shift_inv[n]] ^ k];
+        assert(n < 64 && k < 256);
+        const int m = grostl::shift_q[grostl::shift_inv_p[n]];
+        const int p = (( n & 7) ? m_msg[n] : m_msg[n] ^ (n << 1)) ^ k;
+        const int q = ((~m & 7) ? m_msg[m] : m_msg[m] ^ ((m & ~7) << 1)) ^ 0xFF;
+        return aes::sbox[q] ^ aes::sbox[p];
     }
 
-    virtual int key_bits()      { return 128; }
+    virtual int key_bits()      { return 512; }
     virtual int estimate_bits() { return 8; }
     virtual int target_bits()   { return 8; }
 
@@ -49,5 +53,5 @@ protected:
     std::vector<uint8_t> m_key;
 };
 
-register_crypto(aes_hw_r10, crypto_aes_hw_r10());
+register_crypto(grostl_dp64_hd_r0, crypto_grostl_dp64_hd_r0);
 

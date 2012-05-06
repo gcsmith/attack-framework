@@ -38,6 +38,8 @@ add_executable(gentraces
     ../common/crypto_aes_hw_r0.cpp
     ../common/crypto_aes_hw_r10.cpp
     ../common/crypto_des_hd_r0.cpp
+    ../common/crypto_grostl_dp64_hd_r0.cpp
+    ../common/crypto_grostl_dp512_hd_r0.cpp
     ${common_hdr})
 target_link_libraries(gentraces ${tool_libs})
 
@@ -73,6 +75,8 @@ add_executable(attack
     ../common/crypto_aes_hw_r0.cpp
     ../common/crypto_aes_hw_r10.cpp
     ../common/crypto_des_hd_r0.cpp
+    ../common/crypto_grostl_dp64_hd_r0.cpp
+    ../common/crypto_grostl_dp512_hd_r0.cpp
     ${common_hdr})
 target_link_libraries(attack ${tool_libs})
 

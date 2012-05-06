@@ -40,7 +40,7 @@ module grostl_compress_serial_m(input          clk, wr_m, wr_h,
   assign dout  = m_reg;
 
   always_comb case (sel_m)
-    2'b00:   m_val <= m_in ^ { 8{imask} };       // 0: masked message input
+    2'b00:   m_val <= m_in ^ { 8{imask} };        // 0: masked message input
     2'b01:   m_val <= { p_reg[1:7], s_mix ^ x4 }; // 1: column-rotated round output
     default: m_val <= mhxor;                      // 2: m xor h
   endcase

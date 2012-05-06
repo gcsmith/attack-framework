@@ -29,7 +29,8 @@
 
 #define ENABLE_BENCHMARK
 
-#define foreach BOOST_FOREACH
+#define foreach     BOOST_FOREACH
+#define foreach_r   BOOST_REVERSE_FOREACH
 
 #define NUM_ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
 

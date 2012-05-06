@@ -77,15 +77,20 @@ void trace_reader_v3::close()
 // -----------------------------------------------------------------------------
 bool trace_reader_v3::read(trace &pt, const trace::time_range &range)
 {
-    if (m_current >= m_texts.size() ||
-        !getline(m_wave_in, m_line) || !parse_data(m_line, m_wave, 10))
+    if (m_current >= m_texts.size() || !getline(m_wave_in, m_line))
         return false;
+
+    // read in the waveform sample data
+    float item;
+    vector<float> wave;
+    istringstream iss(m_line);
+    while (iss >> item) wave.push_back(item);
 
     pt.clear();
     pt.set_text(m_texts[m_current++]);
 
-    for (size_t i = 0; i < m_wave.size(); ++i) {
-        pt.push_back(trace::sample(i, (float)m_wave[i]));
+    for (size_t i = 0; i < wave.size(); ++i) {
+        pt.push_back(trace::sample(i, (float)wave[i]));
         m_events.insert(i);
     }
 
@@ -98,20 +103,20 @@ bool trace_writer_v3::open(const string &path, const string &key)
     if (!util::valid_output_dir(path))
         return false;
 
-    const string text_path = util::concat_name(path, "text_out.txt");
+    const string text_path = util::concat_name(path, "text_in.txt");
     const string wave_path = util::concat_name(path, "wave.txt");
     const string key_path  = util::concat_name(path, "key.txt");
 
     // open the plaintext or ciphertext file
-    m_text = fopen(text_path.c_str(), "w");
-    if (!m_text) {
+    m_text_out = fopen(text_path.c_str(), "w");
+    if (!m_text_out) {
         fprintf(stderr, "failed to open text file '%s'\n", text_path.c_str());
         return false;
     }
 
     // open the waveform file
-    m_wave = fopen(wave_path.c_str(), "w");
-    if (!m_wave) {
+    m_wave_out = fopen(wave_path.c_str(), "w");
+    if (!m_wave_out) {
         fprintf(stderr, "failed to open wave file '%s'\n", wave_path.c_str());
         return false;
     }
@@ -133,8 +138,8 @@ bool trace_writer_v3::open(const string &path, const string &key)
 // -----------------------------------------------------------------------------
 void trace_writer_v3::close()
 {
-    fclose(m_text);
-    fclose(m_wave);
+    fclose(m_text_out);
+    fclose(m_wave_out);
 }
 
 // -----------------------------------------------------------------------------
@@ -143,13 +148,13 @@ bool trace_writer_v3::write(const trace &pt)
     // write the plaintext or ciphertext for the current trace
     const vector<uint8_t> text(pt.text());
     for (size_t i = 0; i < text.size(); ++i)
-        fprintf(m_text, "%02X ", text[i]);
-    fprintf(m_text, "\n");
+        fprintf(m_text_out, "%02X ", text[i]);
+    fprintf(m_text_out, "\n");
 
     // write each sample for this trace (one line per trace)
     for (size_t i = 0; i < pt.size(); ++i)
-        fprintf(m_wave, "%d ", (int)pt[i].power);
-    fprintf(m_wave, "\n");
+        fprintf(m_wave_out, "%g ", pt[i].power);
+    fprintf(m_wave_out, "\n");
 
     return true;
 }

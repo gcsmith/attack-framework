@@ -57,13 +57,13 @@ int main(int argc, char *argv[])
     string out_path  = cl.get_str("output-path", "experiment.bin");
     string profile   = cl.get_str("profile", "timing_profile.txt");
     string crypto    = cl.get_str("crypto", "aes_hd_r0");
-    string key       = cl.get_str("key");
+    string key_str   = cl.get_str("key");
     long num_traces  = cl.get_long("num-traces", 1000);
     long num_samples = cl.get_long("num-samples", 5000);
 
     // create the writer for the specified destination trace format
     auto_ptr<trace_writer> pWriter(trace_writer::create(dst_fmt));
-    if (!pWriter.get() || !pWriter->open(out_path, key)) {
+    if (!pWriter.get() || !pWriter->open(out_path, key_str)) {
         fprintf(stderr, "failed to open trace writer\n");
         return 1;
     }
@@ -74,8 +74,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if (!crypt_inst->set_key(util::atob(key)))
+    const vector<uint8_t> key = util::atob(key_str);
+    if (key.size() != (crypt_inst->key_bits() >> 3)) {
+        fprintf(stderr, "invalid key specified: %s\n", key_str.c_str());
         return 1;
+    }
+    crypt_inst->set_key(key);
 
     const size_t text_size = crypt_inst->key_bits() >> 3;
     const long corr_sample = rand() % num_samples;

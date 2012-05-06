@@ -34,7 +34,6 @@ protected:
     typedef std::vector<uint8_t> text_t;
     trace::event_set    m_events;
     std::vector<text_t> m_texts;
-    std::vector<long>   m_wave;
     std::ifstream       m_wave_in;
     std::string         m_line;
     unsigned int        m_current;
@@ -47,8 +46,8 @@ public:
     bool write(const trace &pt);
 
 protected:
-    FILE *m_text;
-    FILE *m_wave;
+    FILE *m_text_out;
+    FILE *m_wave_out;
 };
 
 #endif // TRACE_FORMAT_V3__H

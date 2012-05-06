@@ -26,6 +26,34 @@ using namespace std;
 
 namespace grostl {
 
+int shift_p[64] = {
+     0,  9, 18, 27, 36, 45, 54, 63,  8, 17, 26, 35, 44, 53, 62,  7,
+    16, 25, 34, 43, 52, 61,  6, 15, 24, 33, 42, 51, 60,  5, 14, 23,
+    32, 41, 50, 59,  4, 13, 22, 31, 40, 49, 58,  3, 12, 21, 30, 39,
+    48, 57,  2, 11, 20, 29, 38, 47, 56,  1, 10, 19, 28, 37, 46, 55,
+};
+
+int shift_q[64] = {
+     8, 25, 42, 59,  4, 21, 38, 55, 16, 33, 50,  3, 12, 29, 46, 63,
+    24, 41, 58, 11, 20, 37, 54,  7, 32, 49,  2, 19, 28, 45, 62, 15,
+    40, 57, 10, 27, 36, 53,  6, 23, 48,  1, 18, 35, 44, 61, 14, 31,
+    56,  9, 26, 43, 52,  5, 22, 39,  0, 17, 34, 51, 60, 13, 30, 47,
+};
+
+int shift_inv_p[64] = {
+     0, 57, 50, 43, 36, 29, 22, 15,  8,  1, 58, 51, 44, 37, 30, 23,
+    16,  9,  2, 59, 52, 45, 38, 31, 24, 17, 10,  3, 60, 53, 46, 39,
+    32, 25, 18, 11,  4, 61, 54, 47, 40, 33, 26, 19, 12,  5, 62, 55,
+    48, 41, 34, 27, 20, 13,  6, 63, 56, 49, 42, 35, 28, 21, 14,  7,
+};
+
+int shift_inv_q[64] = {
+    56, 41, 26, 11,  4, 53, 38, 23,  0, 49, 34, 19, 12, 61, 46, 31,
+     8, 57, 42, 27, 20,  5, 54, 39, 16,  1, 50, 35, 28, 13, 62, 47,
+    24,  9, 58, 43, 36, 21,  6, 55, 32, 17,  2, 51, 44, 29, 14, 63,
+    40, 25, 10, 59, 52, 37, 22,  7, 48, 33, 18,  3, 60, 45, 30, 15,
+};
+
 // -----------------------------------------------------------------------------
 // Perform the AddRoundConstant step for the P permutation
 void add_round_const_p(const uint8_t *in, int round, uint8_t *out)
@@ -61,22 +89,16 @@ void sub_bytes_masked(const int tab[64][256], const uint8_t *in, uint8_t *out)
 // Perform the ShiftBytes step for the P permutation
 void shift_bytes_p(const uint8_t *in, uint8_t *out)
 {
-    for (int i = 0; i < 64; ++i) {
-        const int row = i & 7;
-        const int col = ((i >> 3) + row) & 7;
-        out[i] = in[(col << 3) | row];
-    }
+    for (int i = 0; i < 64; ++i)
+        out[i] = in[shift_p[i]];
 }
 
 // -----------------------------------------------------------------------------
 // Perform the ShiftBytes step for the Q permutation
 void shift_bytes_q(const uint8_t *in, uint8_t *out)
 {
-    for (int i = 0; i < 64; ++i) {
-        const int row = i & 7;
-        const int col = ((i >> 3) + (row << 1) + (row < 4)) & 7;
-        out[i] = in[(col << 3) | row];
-    }
+    for (int i = 0; i < 64; ++i)
+        out[i] = in[shift_q[i]];
 }
 
 // -----------------------------------------------------------------------------
@@ -233,6 +255,17 @@ void hash(const vector<uint8_t> &in, vector<uint8_t> &out)
 {
     vector<uint8_t> state(in), chain(64, 0);
     chain[62] = 0x01; // IV
+
+    uint8_t test_in[64], test_out[64];
+    for (int i = 0; i < 64; i++)
+        test_in[i] = i;
+
+    shift_bytes_q(test_in, test_out);
+    for (int i = 0; i < 64; i++)
+        test_in[test_out[i]] = i;
+
+    for (int i = 0; i < 64; i++)
+        printf("%2d%s", test_in[i], ((i + 1) % 16) ? ", " : ",\n");
 
     // compute hash
     pad_message(state);

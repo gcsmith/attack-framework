@@ -22,6 +22,11 @@
 
 namespace grostl {
 
+extern int shift_p[64];
+extern int shift_q[64];
+extern int shift_inv_p[64];
+extern int shift_inv_q[64];
+
 // Grostl-256 P permutation.
 void permute_p(const uint8_t *in, uint8_t *out);
 

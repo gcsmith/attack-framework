@@ -58,9 +58,11 @@ bool trace_reader_simv::read_sim_timestamps(const string &path, bool ct)
     }
 
     // read in the record for each simulated operation
+    printf("parsing timestamps from \"%s\"...\n", path.c_str());
+
     while (getline(sim_in, m_line)) {
         const vector<string> tok(util::split(m_line));
-        if (tok.size() != 3) {
+        if (tok.size() < 3) {
             fprintf(stderr, "expected format: <index> <text_in> <text_out>\n");
             return false;
         }
@@ -107,13 +109,16 @@ void trace_reader_simv::read_waveform_header(istream &wav_in)
 
     while (getline(wav_in, m_line)) {
         // skip comments and empty lines
+        const size_t chars_read = m_line.size() + 1;
         util::trim(m_line);
         if (!m_line.length() || m_line[0] == ';')
             continue;
 
         // if this line is not a directive, assume data and break loop
-        if (m_line[0] != '.')
+        if (m_line[0] != '.') {
+            for (size_t i = 0; i < chars_read; i++) wav_in.unget();
             break;
+        }
 
         vector<string> tokens(util::split(m_line));
         if (tokens.size() == 2 && tokens[0] == ".time_resolution") {
@@ -125,7 +130,7 @@ void trace_reader_simv::read_waveform_header(istream &wav_in)
     // scale each timestamp by the resolution specified in the waveform file
     resolution = 1.0 / resolution;
     foreach (record &rec, m_records)
-        rec.event = (long long)(rec.event * resolution);
+        rec.event = (uint64_t)(rec.event * resolution);
 }
 
 // -----------------------------------------------------------------------------
@@ -144,9 +149,9 @@ void trace_reader_simv::read_waveform_samples(istream &wav_in, ostream &wav_out)
 
         size_t split_pos = m_line.find_first_of(' ');
         if (string::npos == split_pos) {
-            long long event_time = strtoll(m_line.c_str(), NULL, 10);
+            uint64_t event_time = strtoll(m_line.c_str(), NULL, 10);
             if (event_time < m_records[curr].event) {
-                printf("skipping event %lld\n", event_time);
+                printf("skipping event %llu\n", (long long unsigned)event_time);
                 read_timestamp = false;
                 continue;
             }
@@ -191,6 +196,14 @@ bool trace_reader_simv::read(trace &pt, const trace::time_range &range)
     for (size_t i = 0; i < tokens.size(); i += 2) {
         const long index = strtol(tokens[i].c_str(), NULL, 10);
         const float power = strtod(tokens[i + 1].c_str(), NULL);
+
+#if 0
+        if (pt.size() && index == pt.back().time) {
+            printf("duplicate. summing\n");
+            pt.back().power += power;
+            continue;
+        }
+#endif
 
         while ((event != m_events.end()) && (*event < index))
             pt.push_back(trace::sample(*event++, last_power));

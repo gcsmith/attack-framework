@@ -25,10 +25,10 @@ typedef std::vector<long> time_map;
 
 struct crypto_instance {
     /// Set the current message block (plaintext or ciphertext).
-    virtual bool set_message(const std::vector<uint8_t> &msg) = 0;
+    virtual void set_message(const std::vector<uint8_t> &msg) = 0;
 
     /// Set the known encryption key (for use in power profiling).
-    virtual bool set_key(const std::vector<uint8_t> &key) = 0;
+    virtual void set_key(const std::vector<uint8_t> &key) = 0;
 
     /// Given a known encryption key, extract estimate partition index k.
     virtual int extract_estimate(int k) = 0;

@@ -33,7 +33,7 @@ protected:
     struct record {
         record(long long _event, const std::string &_text)
         : event(_event), text(_text) { }
-        long long   event; // sample event index
+        uint64_t    event; // sample event index
         std::string text;  // plaintext or ciphertext
     };
 

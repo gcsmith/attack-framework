@@ -21,7 +21,6 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include <tr1/unordered_map>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/locks.hpp>
 #include "utility.h"
@@ -31,8 +30,6 @@
 class attack_thread;
 
 class attack_engine {
-    typedef std::tr1::unordered_map<long, long> xlat_map;
-
 public:
     // attack_engine constructor
     attack_engine(void);
@@ -108,7 +105,6 @@ protected:
     std::string m_attack;
     std::string m_crypto;
     trace_reader *m_reader;
-    xlat_map m_xlat;
 
     boost::mutex m_mutex;
     boost::thread_group m_group;

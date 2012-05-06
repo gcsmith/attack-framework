@@ -19,54 +19,35 @@
 #include "aes.h"
 
 class crypto_aes_hw_r0: public crypto_instance {
-    std::vector<uint8_t> m_msg;
-    std::vector<uint8_t> m_key;
-
 public:
-    virtual bool set_message(const std::vector<uint8_t> &msg);
-    virtual bool set_key(const std::vector<uint8_t> &key);
-    virtual int extract_estimate(int n);
-    virtual int compute(int n, int k);
+    virtual void set_message(const std::vector<uint8_t> &msg) {
+        assert(msg.size() == 16);
+        m_msg = msg;
+    }
+
+    virtual void set_key(const std::vector<uint8_t> &key) {
+        assert(key.size() == 16);
+        m_key = key;
+    }
+
+    virtual int extract_estimate(int n) {
+        assert(n < 16);
+        return m_key[n];
+    }
+
+    virtual int compute(int n, int k) {
+        assert(n < 16 && k < 256);
+        return aes::sbox[m_msg[n] ^ k];
+    }
+
     virtual int key_bits()      { return 128; }
     virtual int estimate_bits() { return 8; }
     virtual int target_bits()   { return 8; }
+
+protected:
+    std::vector<uint8_t> m_msg;
+    std::vector<uint8_t> m_key;
 };
 
-// -----------------------------------------------------------------------------
-bool crypto_aes_hw_r0::set_message(const std::vector<uint8_t> &msg)
-{
-    if (msg.size() != 16) {
-        fprintf(stderr, "expected 16-byte text, got %d\n", (int)msg.size());
-        return false;
-    }
-    m_msg = msg;
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-bool crypto_aes_hw_r0::set_key(const std::vector<uint8_t> &key)
-{
-    if (key.size() != 16) {
-        fprintf(stderr, "expected 16-byte key, got %d\n", (int)key.size());
-        return false;
-    }
-    m_key = key;
-    return true;
-}
-
-// -----------------------------------------------------------------------------
-int crypto_aes_hw_r0::extract_estimate(int n)
-{
-    assert(n < 16);
-    return m_key[n];
-}
-
-// -----------------------------------------------------------------------------
-int crypto_aes_hw_r0::compute(int n, int k)
-{
-    assert(n < 16 && k < 256);
-    return aes::sbox[m_msg[n] ^ k];
-}
-
-register_crypto(aes_hw_r0, crypto_aes_hw_r0());
+register_crypto(aes_hw_r0, crypto_aes_hw_r0);
 

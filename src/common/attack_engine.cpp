@@ -212,10 +212,6 @@ bool attack_engine::attack_setup(const string &odir)
     m_params.put("num_events", m_times.size());
     m_params.put("num_reports", m_numintervals);
 
-    // map each sample time to its relative index in the list
-    for (size_t index = 0; index < m_times.size(); ++index)
-        m_xlat.insert(make_pair(m_times[index], (long)index));
-
     m_trace = 0;
     m_threads.resize(m_numthreads);
 
@@ -299,25 +295,13 @@ bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
                trace_text.c_str(), id, ++m_trace, m_numtraces);
     }
 
-    tmap.clear();
-
-    // map each sample index to its corresponding event index
-    foreach (const trace::sample &sample, pt.samples()) {
-        xlat_map::const_iterator iter = m_xlat.find(sample.time);
-        if (iter == m_xlat.end()) {
-            printf("event %d not present in timing profile\n", sample.time);
-            return false;
-        }
-        tmap.push_back(iter->second);
+    if (tmap.size() && tmap.size() != pt.size()) {
+        fprintf(stderr, "event count mismatch\n");
+        return false;
     }
 
-//  trace temp;
-//  if (!temp.read_bin(path))
-//      return false;
-//  pt.sample_and_hold(temp, m_times);
-// 
-//  tmap.resize(pt.size());
-//     for (size_t s = 0; s < pt.size(); ++s) tmap[s] = s;
+    tmap.resize(pt.size());
+    for (size_t s = 0; s < pt.size(); ++s) tmap[s] = s;
 
     return true;
 }
