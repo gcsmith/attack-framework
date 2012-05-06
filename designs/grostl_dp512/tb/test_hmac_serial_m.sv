@@ -73,7 +73,6 @@ module testbench;
       drive(0, 1, 0, 2'b10, 0, 1); // 1: Q-S1, M^=H
 
       m_in = 'x;
-      h_in = 'x;
       imask = 'x;
       omask = 'x;
 

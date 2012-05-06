@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 `timescale 1ns/1ns
-`define ITERATIONS 1000
+`define ITERATIONS 10000
 
 module testbench;
   logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_pq = 0;
@@ -69,7 +69,6 @@ module testbench;
       drive(0, 1, 0, 2'b10, 0, 1); // 1: Q-S1, M^=H
 
       m_in = 'x;
-      h_in = 'x;
 
       drive(0, 1, 0, 2'b01, 0, 0); // 2: Q-S2, P-S1
 

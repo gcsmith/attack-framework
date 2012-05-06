@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 `timescale 1ns/1ns
-`define MAX_ITERATION 10
+`define MAX_ITERATION 1000
 `define MAX_ROUND     2
 
 module testbench;
