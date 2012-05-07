@@ -57,5 +57,5 @@ protected:
     std::vector<int> m_key;
 };
 
-register_crypto(des_hd_r0, crypto_des_hd_r0());
+register_crypto(des_hd_r0, crypto_des_hd_r0);
 

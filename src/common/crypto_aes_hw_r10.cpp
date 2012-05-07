@@ -49,5 +49,5 @@ protected:
     std::vector<uint8_t> m_key;
 };
 
-register_crypto(aes_hw_r10, crypto_aes_hw_r10());
+register_crypto(aes_hw_r10, crypto_aes_hw_r10);
 
