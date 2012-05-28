@@ -1,12 +1,13 @@
 QUIET ?= 0
 AMD64 ?= 0
+UNIT ?= encrypt_unit
 
 ifeq ($(QUIET), 1)
-    CLOG = compile.log &>/dev/null
-    SLOG = simulate.log &>/dev/null
+    CLOG = compile_$(UNIT).log &>/dev/null
+    SLOG = simulate_$(UNIT).log &>/dev/null
 else
-    CLOG = compile.log
-    SLOG = simulate.log
+    CLOG = compile_$(UNIT).log
+    SLOG = simulate_$(UNIT).log
 endif
 
 ifeq ($(AMD64), 1)
@@ -19,8 +20,8 @@ endif
 # rule to create the gate-level netlist for aes_encrypt_unit
 ################################################################################
 
-aes_encrypt_unit.vg: scr/synth.script
-	dc_shell $(SYN_OPTS) -f scr/synth.script | tee $(CLOG)
+aes_$(UNIT).vg: scr/synth_$(UNIT).script
+	dc_shell $(SYN_OPTS) -f scr/synth_$(UNIT).script | tee $(CLOG)
 
 ################################################################################
 # separate rules for compilation, simulation, and power analysis
@@ -46,9 +47,9 @@ power: power_waveform.out
 # combined rule for piping VCS simulation data to PrimeTime
 ################################################################################
 
-power_waveform_piped.out: lib/core.v aes_encrypt_unit.vg tb/testbench.sv
-	vlogan -sverilog lib/core.v aes_encrypt_unit.vg tb/testbench.sv | tee -a $(CLOG)
-	pt_shell $(SYN_OPTS) -f scr/power_piped.script | tee -a $(SLOG)
+power_waveform_piped.out: lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv
+	vlogan -sverilog lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv | tee -a $(CLOG)
+	pt_shell $(SYN_OPTS) -f scr/ptx_$(UNIT).script | tee -a $(SLOG)
 
 .PHONY: power_piped
 power_piped: power_waveform_piped.out
@@ -59,11 +60,11 @@ power_piped: power_waveform_piped.out
 
 .PHONY: vsim
 vsim: 
-	vsim -c -do scr/modelsim.do
+	vsim -c -do scr/vsim_$(UNIT).do
 
 .PHONY: vsim
 vgui: 
-	vsim -do scr/modelsim.do
+	vsim -do scr/vsim_$(UNIT).do
 
 .PHONY: clean
 clean:

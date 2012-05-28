@@ -1,4 +1,4 @@
-UIET ?= 0
+QUIET ?= 0
 AMD64 ?= 0
 UNIT ?= compress_serial
 

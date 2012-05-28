@@ -16,7 +16,7 @@
 
 `timescale 1ns/1ns
 `define MAX_ITERATION 1000
-`define MAX_ROUND     2
+`define MAX_ROUND     20
 
 module testbench;
   logic clk = 0, rst = 0, valid_in = 0, valid_out;

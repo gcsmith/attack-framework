@@ -13,7 +13,7 @@ set link_library {* core_typ.db}
 set compile_clock_gating_through_hierarchy true
 read_file -format sverilog "aes_encrypt_unit.sv"
 read_file -format sverilog "aes_add_round_key.sv"
-read_file -format sverilog "aes_sub_bytes.sv"
+read_file -format sverilog "aes_sbox_lut.sv"
 read_file -format sverilog "aes_dual_row_mem.sv"
 read_file -format sverilog "aes_encrypt_control.sv"
 read_file -format sverilog "aes_key_mem.sv"

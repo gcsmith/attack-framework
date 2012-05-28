@@ -6,15 +6,15 @@ vmap work work
 # compile the design and testbench
 
 vlog rtl/aes_add_round_key.sv
-vlog rtl/aes_sub_bytes.sv
+vlog rtl/aes_sbox_masked.sv
 vlog rtl/aes_dual_row_mem.sv
 vlog rtl/aes_encrypt_control.sv
 vlog rtl/aes_key_mem.sv
 vlog rtl/aes_mix_columns.sv
 vlog rtl/aes_read_mux.sv
 vlog rtl/aes_write_mux.sv
-vlog rtl/aes_encrypt_unit.sv
-vlog tb/testbench.sv
+vlog rtl/aes_encrypt_unit_m.sv
+vlog tb/test_encrypt_unit_m.sv
 
 # invoke the simulator
 
@@ -27,6 +27,8 @@ add wave -noupdate -format Logic -label "rst" /testbench/rst
 add wave -noupdate -divider
  
 add wave -noupdate -format Literal -radix Hexadecimal -label "din" /testbench/din
+add wave -noupdate -format Literal -radix Hexadecimal -label "imask" /testbench/imask
+add wave -noupdate -format Literal -radix Hexadecimal -label "omask" /testbench/omask
 add wave -noupdate -format Logic -label "valid_in" /testbench/valid_in
 add wave -noupdate -divider
 

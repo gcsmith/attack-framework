@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module aes_sub_bytes(input  [7:0] s_in,
-                     output [7:0] s_out);
+module aes_sbox_lut(input  [7:0] s_in,
+                    output [7:0] s_out);
 
   // implement the aes s-box as a look up table using combinational logic
   const logic [7:0] rom[0:255] = '{

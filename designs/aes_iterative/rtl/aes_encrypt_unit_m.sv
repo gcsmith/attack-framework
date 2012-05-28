@@ -14,19 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module aes_encrypt_unit(input        clk, reset, valid_input,
-                        input  [7:0] data_in,
-                        output       valid_output,
-                        output [7:0] data_out,
-                        output [3:0] rnd);
+module aes_encrypt_unit_m(input        clk, reset, valid_input,
+                          input  [7:0] data_in,
+                          input  [7:0] imask, omask,
+                          output       valid_output,
+                          output [7:0] data_out,
+                          output [3:0] rnd);
 
   wire [1:0] rd_row;
   wire [2:0] sel, wr_col, rd_col;
   wire [3:0] wr_row;
-  wire [7:0] state, key, ak_out, sb_out, mc_out, wr_data, key_addr, r0, r1, r2, r3;
+  wire [7:0] state, key, ak_in, ak_out, ak_wr, sb_out, mc_out, wr_data, key_addr, r0, r1, r2, r3;
 
-  aes_add_round_key add_round_key(state, key, ak_out);
-  aes_sbox_lut sub_bytes(state, sb_out);
+  assign ak_in = (rnd == 0) ? (state ^ imask) : state;
+  assign ak_wr = (rnd != 0) ? (ak_out ^ imask ^ omask) : ak_out;
+
+  aes_add_round_key add_round_key(ak_in, key, ak_out);
+  bSbox sub_bytes(state, imask, omask, 1'b1, sb_out);
 
   aes_dual_row_mem mem0(clk, wr_row[0], wr_col, rd_col, wr_data, r0);
   aes_dual_row_mem mem1(clk, wr_row[1], wr_col, rd_col, wr_data, r1);
@@ -39,9 +43,9 @@ module aes_encrypt_unit(input        clk, reset, valid_input,
   aes_key_mem key_mem(key_addr, key);
   aes_mix_columns mix_columns(wr_row, r0, r1, r2, r3, mc_out);
   aes_read_mux r_mux(rd_row, r0, r1, r2, r3, state);
-  aes_write_mux w_mux(clk, sel, data_in, sb_out, state, mc_out, ak_out, wr_data);
+  aes_write_mux w_mux(clk, sel, data_in, sb_out, state, mc_out, ak_wr, wr_data);
 
-  assign data_out = state;
+  assign data_out = state ^ imask;
 
 endmodule
 
