@@ -15,7 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 `timescale 1ns/1ns
-`define ITERATIONS 1000
+`define ITERATIONS 5000
 
 module testbench;
   logic       clk = 0, rst = 0, valid = 0;
