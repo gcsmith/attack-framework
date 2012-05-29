@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     }
 
     const vector<uint8_t> key = util::atob(key_str);
-    if (key.size() != (crypt_inst->key_bits() >> 3)) {
+    if (key.size() != (size_t)(crypt_inst->key_bits() >> 3)) {
         fprintf(stderr, "invalid key specified: %s\n", key_str.c_str());
         return 1;
     }
