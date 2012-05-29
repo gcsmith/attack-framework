@@ -11,8 +11,8 @@ set power_analysis_mode     time_based
 
 set search_path     "lib ."
 set link_library    "* core_typ.db"
-read_verilog        aes_encrypt_unit.vg
-current_design      aes_encrypt_unit
+read_verilog        aes_encrypt_unit_m.vg
+current_design      aes_encrypt_unit_m
 link
 
 ################################################################################

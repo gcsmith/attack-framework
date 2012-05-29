@@ -17,7 +17,7 @@ else
 endif
 
 ################################################################################
-# rule to create the gate-level netlist for aes_encrypt_unit
+# rule to create the gate-level netlist
 ################################################################################
 
 aes_$(UNIT).vg: scr/synth_$(UNIT).script
@@ -27,32 +27,32 @@ aes_$(UNIT).vg: scr/synth_$(UNIT).script
 # separate rules for compilation, simulation, and power analysis
 ################################################################################
 
-simv: lib/core.v aes_encrypt_unit.vg tb/testbench.sv
-	vlogan -sverilog lib/core.v aes_encrypt_unit.vg tb/testbench.sv | tee -a $(CLOG)
+simv: lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv
+	vlogan -sverilog lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv | tee -a $(CLOG)
 	vcs -debug testbench +vcs+dumpvars+top.vcd | tee -a $(CLOG)
 
-dump.vpd: simv scr/simv.do
-	./simv -ucli -do scr/simv.do | tee $(SLOG)
+dump.vpd: simv scr/simv_$(UNIT).do
+	./simv -ucli -do scr/simv_$(UNIT).do | tee $(SLOG)
 
 dump.vcd: dump.vpd
 	vpd2vcd +includemda dump.vpd dump.vcd | tee -a $(SLOG)
 
-power_waveform.out: dump.vcd scr/power.script
-	pt_shell $(SYN_OPTS) -f scr/power.script | tee -a $(SLOG)
+power_waveform_orig.out: dump.vcd scr/ptx_orig_$(UNIT).script
+	pt_shell $(SYN_OPTS) -f scr/ptx_orig_$(UNIT).script | tee -a $(SLOG)
 
-.PHONY: power
-power: power_waveform.out
+.PHONY: power_orig
+power_orig: power_waveform_orig.out
 
 ################################################################################
 # combined rule for piping VCS simulation data to PrimeTime
 ################################################################################
 
-power_waveform_piped.out: lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv
+power_waveform.out: lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv scr/ptx_$(UNIT).script
 	vlogan -sverilog lib/core.v aes_$(UNIT).vg tb/test_$(UNIT).sv | tee -a $(CLOG)
 	pt_shell $(SYN_OPTS) -f scr/ptx_$(UNIT).script | tee -a $(SLOG)
 
-.PHONY: power_piped
-power_piped: power_waveform_piped.out
+.PHONY: power
+power: power_waveform.out
 
 ################################################################################
 # targets for modelsim (vsim) simulation
