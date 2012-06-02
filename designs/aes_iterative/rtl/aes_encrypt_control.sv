@@ -31,7 +31,7 @@ module aes_encrypt_control(input        clk, reset, valid_input,
 
   // state register control
   always @(posedge clk, posedge reset)
-      cs <= reset ? IDLE : ns;
+    cs <= reset ? IDLE : ns;
 
   // next state control logic
   always_comb begin
