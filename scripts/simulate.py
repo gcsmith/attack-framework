@@ -4,11 +4,12 @@ import os, shutil, subprocess, tarfile, threading
 
 # ------------------------------------------------------------------------------
 class simulation_thread(threading.Thread):
-    def __init__(self, build_cmd, work_path, quiet):
+    def __init__(self, build_cmd, work_path, sema, quiet):
         threading.Thread.__init__(self)
         self.build_cmd = build_cmd
         self.work_path = work_path
-        self.quiet = quiet
+        self.sema      = sema
+        self.quiet     = quiet
 
     def run(self):
         if self.quiet:
@@ -18,11 +19,13 @@ class simulation_thread(threading.Thread):
             fp_stdout = None
             fp_stderr = None
 
+        self.sema.acquire()
         print self.getName(), 'spawning', self.build_cmd, 'in', self.work_path
         child = subprocess.Popen(self.build_cmd, cwd=self.work_path,
                                  stdout=fp_stdout, stderr=fp_stderr)
         child.wait()
         print self.getName(), 'completed'
+        self.sema.release()
 
 # ------------------------------------------------------------------------------
 def create_symlinks(src_path, names):
@@ -48,6 +51,8 @@ def parse_command_line():
                    help='specify the working directory for simulation')
     p.add_argument('-i', '--inst', metavar='arg', type=int, default=1,
                    help='number of simulator instances to run')
+    p.add_argument('-d', '--dop', metavar='arg', type=int, default=0,
+                   help='specify the maximum degree of parallelism')
     p.add_argument('-s', '--seed', metavar='arg',
                    help='specify the initial seed value for simulation')
     p.add_argument('-u', '--unit', metavar='arg',
@@ -71,6 +76,9 @@ def parse_command_line():
         sys.exit(1)
     if args.inst < 1:
         print 'must specify at least one instance to run'
+        sys.exit(1)
+    if args.dop < 0 or args.dop > args.inst:
+        print 'invalid degree of parallelism specified:', args.dop
         sys.exit(1)
     if not os.path.isdir(args.work):
         print 'creating top level work directory:', args.work
@@ -97,9 +105,15 @@ if __name__ == '__main__':
     threads = []
     results = []
 
+    # create a semaphore to enforce the maximum degree of parallelism allowed
+    max_dop = min([args.dop, args.inst]) if args.dop > 0 else args.inst
+    sema = threading.BoundedSemaphore(value=max_dop)
+
     for i in range(args.inst):
         # create the temporary working directory, and link the specified design
         work_path = 'work_' + str(i)
+        work_abs  = os.path.abspath(work_path)
+
         if os.path.isdir(work_path):
             print 'Deleting existing work directory:', work_path
             shutil.rmtree(work_path)
@@ -110,7 +124,7 @@ if __name__ == '__main__':
         os.chdir('..')
     
         # spawn the subprocess thread to kick off the simulation
-        t = simulation_thread(build_cmd, os.path.abspath(work_path), args.quiet)
+        t = simulation_thread(build_cmd, work_abs, sema, args.quiet)
         t.start()
         threads.append(t)
     
