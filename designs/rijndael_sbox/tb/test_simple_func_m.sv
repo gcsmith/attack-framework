@@ -15,12 +15,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 `timescale 1ns/1ns
-`define ITERATIONS 5000
 
 module testbench;
   logic       clk = 0, rst = 0, valid = 0;
   logic [7:0] din = '0, key = '0, imask = '0, omask = '0, dout;
-  int fp_sim;
+  int fp_sim, iterations;
 
   const logic [7:0] key_rom[0:15] = '{
       'h00, 'h11, 'h22, 'h33, 'h44, 'h55, 'h66, 'h77,
@@ -43,7 +42,10 @@ module testbench;
     // set the initial system state
     fp_sim = $fopen("simulation.txt", "w");
 
-    for (int i = 0; i < `ITERATIONS; i++) begin
+    if (!$value$plusargs("iterations=%d", iterations))
+        iterations = 1000;
+
+    for (int i = 0; i < iterations; i++) begin
       // create a random 512-bit message block and chaining value
       automatic iteration_state msg = new;
       void'(msg.randomize());
