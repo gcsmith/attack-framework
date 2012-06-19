@@ -118,11 +118,10 @@ bool attack_engine::attack_setup(const options &opt, trace_reader *pReader)
 // -----------------------------------------------------------------------------
 void attack_engine::attack_shutdown(void)
 {
-    attack_thread *first_thread = m_threads.front();
-    const int num_guesses = 1 << first_thread->crypto()->estimate_bits();
-
     // if there are multiple worker threads, merge their results
+    attack_thread *first_thread = m_threads.front();
     printf("\n");
+
     for (size_t i = 1; i < m_threads.size(); ++i) {
         printf("coalescing thread instance [%zu]...\n", i);
         first_thread->attack()->coalesce(m_threads[i]->attack());
@@ -133,9 +132,10 @@ void attack_engine::attack_shutdown(void)
     first_thread->attack()->get_diffs(diffs);
     first_thread->attack()->get_maxes(maxes);
 
+    const int num_guesses = 1 << first_thread->crypto()->estimate_bits();
     write_diffs_report(diffs, num_guesses);
-    write_maxes_report(maxes);
-    write_confs_report(maxes);
+    write_maxes_report(maxes, num_guesses);
+    write_confs_report(maxes, num_guesses);
 
     // finally, destroy the threads themselves
     foreach (attack_thread *thread, m_threads) delete thread;
@@ -219,10 +219,10 @@ void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
 }
 
 // -----------------------------------------------------------------------------
-void attack_engine::write_maxes_report(const vector<double> &maxes)
+void attack_engine::write_maxes_report(const vector<double> &maxes, int nk)
 {
-    if (maxes.size() != 256 * m_reports) {
-        fprintf(stderr, "invalid # of maxes in write_maxes_report\n");
+    if (m_reports == 1 || maxes.size() != nk * m_reports) {
+        fprintf(stderr, "skipping interval maximum report...\n");
         return;
     }
 
@@ -234,18 +234,18 @@ void attack_engine::write_maxes_report(const vector<double> &maxes)
     }
 
     for (size_t i = 0; i < m_reports; ++i) {
-        const double *m = &maxes[i * 256];
+        const double *m = &maxes[i * nk];
         report << scientific << m_interval * (i + 1) << ',';
-        for (int k = 0; k < 256; ++k) report << m[k] << ',';
+        for (int k = 0; k < nk; ++k) report << m[k] << ',';
         report << endl;
     }
 }
 
 // -----------------------------------------------------------------------------
-void attack_engine::write_confs_report(const vector<double> &maxes)
+void attack_engine::write_confs_report(const vector<double> &maxes, int nk)
 {
-    if (maxes.size() != 256 * m_reports) {
-        fprintf(stderr, "invalid # of maxes in write_confs_report\n");
+    if (m_reports == 1 || maxes.size() != nk * m_reports) {
+        fprintf(stderr, "skipping confidence interval report...\n");
         return;
     }
 
@@ -258,11 +258,11 @@ void attack_engine::write_confs_report(const vector<double> &maxes)
 
     for (size_t i = 0; i < m_reports; ++i) {
         // compute the confidence ratio for each key guess in this interval
-        for (int k = 0; k < 256; ++k) {
-            double correct = maxes[i * 256 + k];
+        for (int k = 0; k < nk; ++k) {
+            double correct = maxes[i * nk + k];
             double incorrect = 0.0;
-            for (int j = 0; j < 256; ++j)
-                if (j != k) incorrect = max(incorrect, maxes[i * 256 + j]);
+            for (int j = 0; j < nk; ++j)
+                if (j != k) incorrect = max(incorrect, maxes[i * nk + j]);
             report << (correct / incorrect) << ',';
         }
         report << endl;

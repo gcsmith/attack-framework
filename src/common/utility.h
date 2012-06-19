@@ -71,6 +71,9 @@ size_t glob(const std::string &path, const std::string &pattern,
 size_t glob_recursive(const std::string &path, const std::string &pattern,
                       std::vector<std::string> &out);
 
+//! Return true if there is at least one file under 'path' matching 'pattern'.
+bool directory_search(const std::string &path, const std::string &pattern);
+
 //! Convert a hexadecimal string into an array of bytes.
 bool atob(const std::string &str, uint8_t *bytes, size_t count);
 

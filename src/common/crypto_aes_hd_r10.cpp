@@ -43,6 +43,7 @@ public:
     }
 
     virtual int key_bits()      { return 128; }
+    virtual int block_bits()    { return 128; }
     virtual int estimate_bits() { return 8; }
     virtual int target_bits()   { return 8; }
 

@@ -52,13 +52,13 @@ public:
 
 protected:
     //! write the differential trace report
-    void write_diffs_report(const std::vector<double> &diffs, int k);
+    void write_diffs_report(const std::vector<double> &diffs, int guesses);
 
     //! write the maximum trace report
-    void write_maxes_report(const std::vector<double> &maxes);
+    void write_maxes_report(const std::vector<double> &maxes, int guesses);
 
     //! write the confidence interval report
-    void write_confs_report(const std::vector<double> &maxes);
+    void write_confs_report(const std::vector<double> &maxes, int guesses);
 
     //! perform pre-attack initialization
     bool attack_setup(const options &opt, trace_reader *pReader);

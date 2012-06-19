@@ -59,9 +59,9 @@ bool valid_output_directory(const string &path)
 // -----------------------------------------------------------------------------
 size_t glob(const string &path, const string &pattern, vector<string> &out)
 {
-    if (!fs::is_directory(path))
-        return 0;
+    if (!fs::is_directory(path)) return 0;
 
+    // scan through 'path' and glob the files matching 'pattern'
     const boost::regex regex_pattern(pattern);
     fs::directory_iterator iter_begin(path), iter_end;
 
@@ -70,17 +70,19 @@ size_t glob(const string &path, const string &pattern, vector<string> &out)
             out.push_back(curr_path.string());
     }
 
+    // return a sorted list of matching paths
     sort(out.begin(), out.end());
     return out.size();
 }
 
 // -----------------------------------------------------------------------------
-size_t glob_recursive(const string &path, const string &expr, vector<string> &out)
+size_t glob_recursive(const string &path, const string &pattern,
+                      vector<string> &out)
 {
-    if (!fs::is_directory(path))
-        return 0;
+    if (!fs::is_directory(path)) return 0;
 
-    const boost::regex regex_pattern(expr);
+    // recursively scan through 'path' and glob the files matching 'pattern'
+    const boost::regex regex_pattern(pattern);
     fs::recursive_directory_iterator iter_begin(path), iter_end;
 
     foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
@@ -88,8 +90,23 @@ size_t glob_recursive(const string &path, const string &expr, vector<string> &ou
             out.push_back(curr_path.string());
     }
 
+    // return a sorted list of matching paths
     sort(out.begin(), out.end());
     return out.size();
+}
+
+// -----------------------------------------------------------------------------
+bool directory_search(const string &path, const string &pattern)
+{
+    if (!fs::is_directory(path)) return false;
+
+    const boost::regex regex_pattern(pattern);
+    fs::recursive_directory_iterator iter_begin(path), iter_end;
+
+    foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end))
+        if (regex_search(curr_path.string(), regex_pattern)) return true;
+
+    return false;
 }
 
 // -----------------------------------------------------------------------------

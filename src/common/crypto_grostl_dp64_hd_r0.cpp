@@ -45,6 +45,7 @@ public:
     }
 
     virtual int key_bits()      { return 512; }
+    virtual int block_bits()    { return 512; }
     virtual int estimate_bits() { return 8; }
     virtual int target_bits()   { return 8; }
 

@@ -39,6 +39,9 @@ struct crypto_instance {
     //! Return the total size of the encryption key in bits.
     virtual int key_bits() = 0;
 
+    //! Return the block size of the internal state in bits.
+    virtual int block_bits() = 0;
+
     //! Return the size of the secret value estimate in bits.
     virtual int estimate_bits() = 0;
 

@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cassert>
+#include <cstdio>
 #include "trace_format.h"
 #include "utility.h"
 
@@ -55,17 +56,15 @@ string trace_reader::guess_format(const string &path)
     }
     else {
         // input path is a directory, so determine type by the files within
-        vector<string> filenames;
-
-        if (util::glob(path, ".*\\.out$", filenames))
+        if (util::directory_search(path, ".*\\.out$"))
             return "out";
-        else if (util::glob(path, "simulation.*\\.txt$", filenames))
+        else if (util::directory_search(path, "simulation.*\\.txt$"))
             return "simv";
-        else if (util::glob(path, ".*\\.bin$", filenames))
+        else if (util::directory_search(path, ".*\\.bin$"))
             return "v1";
-        else if (util::glob(path, ".*\\.csv$", filenames))
+        else if (util::directory_search(path, ".*\\.csv$"))
             return "v2";
-        else if (util::glob(path, "text_.*\\.txt$", filenames))
+        else if (util::directory_search(path, "text_.*\\.txt$"))
             return "v3";
     }
 

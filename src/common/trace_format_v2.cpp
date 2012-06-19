@@ -34,6 +34,8 @@ public:
     const trace::event_set &events(void) const { return m_events; }
 
 protected:
+    bool read_waveform(const string &path, trace &pt) const;
+
     trace::event_set m_events;
     vector<string>   m_paths;
     string           m_search;
@@ -50,7 +52,7 @@ bool trace_reader_v2::summary(const string &path) const
 
     vector<string> paths;
     if (!util::glob(path, ".*\\.csv$", paths)) {
-        fprintf(stderr, "not a valid trace directory\n");
+        fprintf(stderr, "no valid traces found in '%s'\n", path.c_str());
         return false;
     }
 
@@ -79,23 +81,18 @@ bool trace_reader_v2::open(const string &path, const options &opt)
     m_tmax = opt.max_time;
 
     // get the full list of .csv files located in the input directory
-    vector<string> paths;
-    if (!util::glob(path, ".*\\.csv", paths) || !paths.size()) {
-        fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
+    if (!util::glob(path, ".*k=" + opt.key + ".*\\.csv", m_paths)) {
+        fprintf(stderr, "no matching traces found in '%s'\n", path.c_str());
         return false;
     }
 
-    // cull the list down to traces matching the specified key
-    const string search("k=" + opt.key);
-    foreach (const string &filename, paths) {
-        if (string::npos != filename.find(search))
-            m_paths.push_back(filename);
-    }
+    if (opt.num_traces && opt.num_traces < m_paths.size())
+        m_paths.resize(opt.num_traces);
 
-    if (!m_paths.size()) {
-        fprintf(stderr, "no traces found matching key: %s\n", opt.key.c_str());
-        return false;
-    }
+    // read in the first trace to determine the number of event indices
+    trace temp;
+    read_waveform(m_paths.front(), temp);
+    for (size_t i = 0; i < temp.size(); ++i) m_events.insert(i);
 
     // select search string based on whether we want plaintext or ciphertext
     m_search = opt.ciphertext ? "c=" : "m=";
@@ -107,6 +104,7 @@ bool trace_reader_v2::open(const string &path, const options &opt)
 // virtual
 void trace_reader_v2::close()
 {
+    m_events.clear();
     m_paths.clear();
     m_current = 0;
 }
@@ -121,17 +119,24 @@ bool trace_reader_v2::read(trace &pt)
     const string path(m_paths[m_current++]);
     const string msg_str(path.substr(path.find(m_search) + 2, 32));
 
+    pt.clear();
+    pt.set_text(util::atob(msg_str));
+
+    return read_waveform(path, pt);
+}
+
+// -----------------------------------------------------------------------------
+bool trace_reader_v2::read_waveform(const string &path, trace &pt) const
+{
     ifstream fin(path.c_str());
     if (!fin.is_open()) {
         fprintf(stderr, "unable to open %s for reading\n", path.c_str());
         return false;
     }
 
-    pt.clear();
-    pt.set_text(util::atob(msg_str));
-
     string curr_line;
     unsigned long sample_time = 0;
+
     while (getline(fin, curr_line)) {
         // skip comments
         if (curr_line[0] == '#') continue;
@@ -141,10 +146,8 @@ bool trace_reader_v2::read(trace &pt)
         if (m_tmax && sample_time > m_tmax) break;
 
         float value = (float)strtol(curr_line.c_str(), NULL, 10);
-        pt.push_back(trace::sample(sample_time, value));
-        m_events.insert(sample_time++); // FIXME
+        pt.push_back(trace::sample(sample_time++, value));
     }
-
     return true;
 }
 

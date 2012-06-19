@@ -16,7 +16,7 @@ def read_csv(path):
 def guess_key_from_conf(data):
     key_idx = 0
     last = data.shape[1] - 1
-    for i in range(255):
+    for i in range(data.shape[0]):
         if data[i][last] > data[key_idx][last]:
             key_idx = i
     return key_idx

@@ -18,6 +18,8 @@
 #include "attack_manager.h"
 #include "attack_thread.h"
 
+using namespace std;
+
 // -----------------------------------------------------------------------------
 attack_thread::attack_thread(int id, attack_engine *engine)
 : m_id(id), m_engine(engine)
@@ -31,8 +33,7 @@ attack_thread::~attack_thread(void)
 }
 
 // -----------------------------------------------------------------------------
-bool attack_thread::create(const std::string &attack,
-                           const std::string &crypto,
+bool attack_thread::create(const string &attack, const string &crypto,
                            const util::parameters &params)
 {
     m_attack.reset(attack_manager::create_attack(attack));
@@ -54,19 +55,21 @@ bool attack_thread::create(const std::string &attack,
 void attack_thread::run(void)
 {
     trace pt;
-    std::vector<long> mapper;
+    vector<long> mapper;
 
     // determine correct byte-length of each text and check for erroneous input
-    const size_t text_len = m_crypto->key_bits() >> 3;
+    const size_t text_len = m_crypto->block_bits() >> 3;
 
     while (m_engine->next_trace(m_id, mapper, pt)) {
         // provide the next plaintext/ciphertext to the crypto instance
-        if (pt.text().size() != text_len) {
-            fprintf(stderr, "[%d] invalid plain/ciphertext specified: %s\n",
-                    m_id, util::btoa(pt.text()).c_str());
+        const vector<uint8_t> text(pt.text());
+        if (text.size() != text_len) {
+            fprintf(stderr, "[%d] invalid plain/ciphertext specified: %s "
+                            "(expected %zu bytes, got %zu)\n",
+                    m_id, util::btoa(text).c_str(), text_len, text.size());
             return;
         }
-        m_crypto->set_message(pt.text());
+        m_crypto->set_message(text);
 
         // run the attack algorithm on the next set of samples
         m_attack->process(mapper, pt);

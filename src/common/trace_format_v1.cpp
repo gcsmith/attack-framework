@@ -33,6 +33,8 @@ public:
     const trace::event_set &events(void) const { return m_events; }
 
 protected:
+    bool read_waveform(const string &path, trace &pt) const;
+
     trace::event_set m_events;
     vector<string>   m_paths;
     string           m_search;
@@ -49,7 +51,7 @@ bool trace_reader_v1::summary(const string &path) const
 
     vector<string> paths;
     if (!util::glob(path, ".*\\.bin$", paths)) {
-        fprintf(stderr, "not a valid trace directory\n");
+        fprintf(stderr, "no valid traces found in '%s'\n", path.c_str());
         return false;
     }
 
@@ -77,24 +79,19 @@ bool trace_reader_v1::open(const string &path, const options &opt)
     m_tmin = opt.min_time;
     m_tmax = opt.max_time;
 
-    // get the full list of binary files located in the input directory
-    vector<string> paths;
-    if (!util::glob(path, ".*\\.bin", paths) || !paths.size()) {
-        fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
+    // get the full list of .bin files located in the input directory
+    if (!util::glob(path, ".*k=" + opt.key + ".*\\.bin", m_paths)) {
+        fprintf(stderr, "no matching traces found in '%s'\n", path.c_str());
         return false;
     }
 
-    // cull the list down to traces matching the specified key
-    const string search("k=" + opt.key);
-    foreach (const string &filename, paths) {
-        if (string::npos != filename.find(search))
-            m_paths.push_back(filename);
-    }
+    if (opt.num_traces && opt.num_traces < m_paths.size())
+        m_paths.resize(opt.num_traces);
 
-    if (!m_paths.size()) {
-        fprintf(stderr, "no traces found matching key: %s\n", opt.key.c_str());
-        return false;
-    }
+    // read in the first trace to determine the number of event indices
+    trace temp;
+    read_waveform(m_paths.front(), temp);
+    for (size_t i = 0; i < temp.size(); ++i) m_events.insert(i);
 
     // select search string based on whether we want plaintext or ciphertext
     m_search = opt.ciphertext ? "c=" : "m=";
@@ -123,6 +120,12 @@ bool trace_reader_v1::read(trace &pt)
     pt.clear();
     pt.set_text(util::atob(msg_str));
 
+    return read_waveform(path, pt);
+}
+
+// -----------------------------------------------------------------------------
+bool trace_reader_v1::read_waveform(const string &path, trace &pt) const
+{
     FILE *fp = fopen(path.c_str(), "rb");
     if (NULL == fp) {
         fprintf(stderr, "failed to open %s for reading\n", path.c_str());
@@ -156,9 +159,7 @@ bool trace_reader_v1::read(trace &pt)
         // only record samples within the specified time range
         if (m_tmin && i < m_tmin) continue;
         if (m_tmax && i > m_tmax) break;
-
         pt.push_back(trace::sample(i, data[i]));
-        m_events.insert(i); // FIXME
     }
 
     DestroyAnalogWaveform(data);
