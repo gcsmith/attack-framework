@@ -50,12 +50,6 @@ add_executable(grostltool grostltool.cpp ${common_hdr})
 target_link_libraries(grostltool ${tool_libs})
 
 # ------------------------------------------------------------------------------
-project(profile)
-
-add_executable(profile profile.cpp ${common_hdr})
-target_link_libraries(profile ${tool_libs})
-
-# ------------------------------------------------------------------------------
 project(sboxtool)
 
 add_executable(sboxtool sboxtool.cpp ${common_hdr})

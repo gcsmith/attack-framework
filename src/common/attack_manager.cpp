@@ -40,11 +40,17 @@ bool attack_manager::add_attack(const string &name, create_attack_fn fn)
 // -----------------------------------------------------------------------------
 attack_instance *attack_manager::create_attack(const string &name)
 {
-    attack_map::const_iterator i;
-    if (!n_attackMap || (n_attackMap->end() == (i = n_attackMap->find(name))))
+    if (!n_attackMap) {
+        fprintf(stderr, "error: no registered attack_instance objects!\n");
         return NULL;
-    else
-        return i->second();
+    }
+
+    attack_map::const_iterator iter = n_attackMap->find(name);
+    if (n_attackMap->end() == iter) {
+        list_attack(stderr);
+        return NULL;
+    }
+    return iter->second();
 }
 
 // -----------------------------------------------------------------------------
@@ -59,15 +65,21 @@ bool attack_manager::add_crypto(const string &name, create_crypto_fn fn)
 // -----------------------------------------------------------------------------
 crypto_instance *attack_manager::create_crypto(const string &name)
 {
-    crypto_map::const_iterator i;
-    if (!n_cryptoMap || (n_cryptoMap->end() == (i = n_cryptoMap->find(name))))
+    if (!n_cryptoMap) {
+        fprintf(stderr, "error: no registered crypto_instance objects!\n");
         return NULL;
-    else
-        return i->second();
+    }
+
+    crypto_map::const_iterator iter = n_cryptoMap->find(name);
+    if (n_cryptoMap->end() == iter) {
+        list_crypto(stderr);
+        return NULL;
+    }
+    return iter->second();
 }
 
 // -----------------------------------------------------------------------------
-void attack_manager::list(FILE *fp)
+void attack_manager::list_attack(FILE *fp)
 {
     fprintf(fp, "Supported attack algorithms:\n");
     if (n_attackMap) {
@@ -76,7 +88,11 @@ void attack_manager::list(FILE *fp)
         for (i = n_attackMap->begin(); i != n_attackMap->end(); ++i)
             fprintf(fp, "    [%d] %s\n", count++, i->first.c_str());
     }
+}
 
+// -----------------------------------------------------------------------------
+void attack_manager::list_crypto(FILE *fp)
+{
     fprintf(fp, "Supported crypto functions:\n");
     if (n_cryptoMap) {
         int count = 0;

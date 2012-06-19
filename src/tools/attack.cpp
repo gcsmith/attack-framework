@@ -15,6 +15,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "attack_engine.h"
+#include "attack_manager.h"
 #include "cmdline.h"
 
 using namespace std;
@@ -31,10 +32,9 @@ int main(int argc, char *argv[])
         { CL_STR,  "attack,a",     "attack algorithm name" },
         { CL_STR,  "crypto,c",     "cryptographic function name" },
         { CL_LONG, "num-traces,n", "maximum number of traces to process" },
-        { CL_FLAG, "ciphertext",   "use ciphertext rather than plaintext" },
         { CL_STR,  "params,p",     "specify attack specific parameters" },
-        { CL_STR,  "profile,P",    "specify the timing profile" },
         { CL_LONG, "report,r",     "generate report every N traces" },
+        { CL_FLAG, "ciphertext",   "use ciphertext rather than plaintext" },
         { CL_LONG, "threads",      "number of worker threads to run" },
         { CL_STR,  "prefix",       "specify prefix for result files" },
         { CL_FLAG, "list",         "print a list of attack algorithms" },
@@ -51,46 +51,43 @@ int main(int argc, char *argv[])
 
     // parse each command line argument from the variable map
     if (cl.count("list")) {
-        attack_manager::list(stdout);
+        attack_manager::list_attack(stdout);
+        attack_manager::list_crypto(stdout);
         return 0;
     }
 
-    if (!cl.count("attack") || !cl.count("crypto")) {
-        fprintf(stderr, "must specify an attack method and crypto type\n");
-        return 1;
+    // determine the input trace file format, either specified or guessed
+    const string input_path = cl.get_str("input-path", "trace_input_path");
+    string src_fmt = cl.get_str("src-fmt", "auto");
+
+    if (src_fmt == "auto") {
+        src_fmt = trace_reader::guess_format(input_path);
+        printf("guessing trace src-format: %s\n", src_fmt.c_str());
     }
 
-    // parse each command line argument from the variable map
-    string src_fmt  = cl.get_str("src-fmt", "packed");
-    string in_path  = cl.get_str("input-path", "trace_input_path");
-    string out_path = cl.get_str("output-dir", "attack_results");
-    string profile  = cl.get_str("profile", "timing_profile.txt");
-    int num_threads = cl.get_long("threads", 1);
-    int num_traces  = cl.get_long("num-traces", 0);
-    int report_int  = cl.get_long("report", 0);
-    bool ciphertext = cl.get_flag("ciphertext");
+    trace_reader::options reader_opt;
+    reader_opt.min_time    = 0;
+    reader_opt.max_time    = 0;
+    reader_opt.num_traces  = cl.get_long("num-traces", 0); // 0 is maximum
+    reader_opt.ciphertext  = cl.get_flag("ciphertext");
+    reader_opt.key         = "";
+
+    attack_engine::options engine_opt;
+    engine_opt.attack_name = cl.get_str("attack",     "cpa");
+    engine_opt.crypto_name = cl.get_str("crypto",     "aes_hd_r0");
+    engine_opt.parameters  = cl.get_str("params",     "byte=0,bits=8,offset=0");
+    engine_opt.result_path = cl.get_str("output-dir", "attack_results");
+    engine_opt.prefix      = cl.get_str("prefix",     "output");
+    engine_opt.num_threads = cl.get_long("threads",   1);
+    engine_opt.report_tick = cl.get_long("report",    0);
 
     // allocate the reader object given the specified trace input format
     auto_ptr<trace_reader> pReader(trace_reader::create(src_fmt));
-    if (!pReader.get() || !pReader->open(in_path, "", ciphertext))
+    if (!pReader.get() || !pReader->open(input_path, reader_opt))
         return 1;
 
     // initialize and run the attack engine
     attack_engine engine;
-    engine.set_reader(pReader.get());
-    engine.set_attack(cl.get_str("attack"));
-    engine.set_crypto(cl.get_str("crypto"));
-    engine.set_params(cl.get_str("params"));
-    engine.set_results_prefix(cl.get_str("prefix"));
-    engine.set_thread_count(num_threads);
-    engine.set_num_traces(num_traces);
-    engine.set_report_interval(report_int);
-
-    if (!engine.load_trace_profile(profile)) {
-        fprintf(stderr, "failed to load timing profile\n");
-        return 1;
-    }
-
-    return engine.run(out_path);
+    return engine.run(engine_opt, pReader.get());
 }
 

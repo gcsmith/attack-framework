@@ -18,18 +18,17 @@
 #include <cstdio>
 #include <algorithm>
 #include <boost/bind.hpp>
-#include "trace.h"
-#include "utility.h"
 #include "attack_engine.h"
+#include "attack_manager.h"
 #include "attack_thread.h"
+#include "utility.h"
 
 using namespace std;
 using namespace util;
 
 // -----------------------------------------------------------------------------
 attack_engine::attack_engine(void)
-: m_tracemax(0), m_numtraces(0), m_numintervals(0), m_interval(0),
-  m_numthreads(3), m_prefix("attack"), m_attack("cpa"), m_crypto("aes_hw_r0")
+: m_reports(0), m_interval(0), m_current(0)
 {
 }
 
@@ -39,188 +38,78 @@ attack_engine::~attack_engine(void)
 }
 
 // -----------------------------------------------------------------------------
-bool attack_engine::open_out(const string &path, ofstream &fout)
+bool attack_engine::run(const options &opt, trace_reader *pReader)
 {
-    fout.open(path.c_str());
-    if (!fout.is_open()) {
-        fprintf(stderr, "failed to open output file '%s'\n", path.c_str());
+    BENCHMARK_DECLARE(attack_whole);
+
+    printf("attacking with %zu trace(s)...\n", pReader->trace_count());
+
+    // perform pre-attack initialization
+    if (!attack_setup(opt, pReader))
         return false;
-    }
+
+    m_group.join_all();
+
+    // perform post-attack shutdown
+    attack_shutdown();
+
+    BENCHMARK_SAMPLE(attack_whole);
     return true;
 }
 
 // -----------------------------------------------------------------------------
-void attack_engine::set_attack(const string &name)
+bool attack_engine::attack_setup(const options &opt, trace_reader *pReader)
 {
-    m_attack = name;
-}
+    const string results = opt.result_path.length() ? opt.result_path : ".";
+    const string prefix = opt.prefix.length() ? opt.prefix + "_" : "";
 
-// -----------------------------------------------------------------------------
-void attack_engine::set_crypto(const string &name)
-{
-    m_crypto = name;
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::set_reader(trace_reader *pReader)
-{
-    m_reader = pReader;
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::set_params(const string &params)
-{
-    foreach (const string &expr, util::split(params, ",")) {
-        size_t pos = expr.find_first_of('=');
-        if (string::npos == pos) {
-            fprintf(stderr, "bad parameter declaration: %s\n", expr.c_str());
-            continue;
-        }
-        m_params.put(expr.substr(0, pos), expr.substr(pos + 1));
-    }
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::set_results_prefix(const string &prefix)
-{
-    if (prefix.length())
-        m_prefix = prefix;
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::set_num_traces(size_t count)
-{
-    m_tracemax = count;
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::set_report_interval(size_t count)
-{
-    m_interval = count;
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::set_thread_count(size_t count)
-{
-    m_numthreads = count;
-}
-
-// -----------------------------------------------------------------------------
-bool attack_engine::load_trace_profile(const string &path)
-{
-    // read in the time indices for these traces from the timing profile
-    return trace::read_profile(path, m_times);
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
-{
-    const size_t num_events = m_times.size();
-    if (diffs.size() != nk * num_events) {
-        fprintf(stderr, "invalid # of differentials in write_diffs_report\n");
-        return;
-    }
-
-    int best_k = -1, at_sample = -1;
-    double max_diff = 0.0;
-    for (size_t i = 0; i < num_events; ++i) {
-        m_odif << scientific << m_times[i] << ',';
-        for (int k = 0; k < nk; ++k) {
-            double value = diffs[k * num_events + i];
-            m_odif << value << ',';
-            if (fabs(value) > max_diff) {
-                max_diff = fabs(value);
-                best_k = k;
-                at_sample = i;
-            }
-        }
-        m_odif << endl;
-    }
-    printf("best key guess = %02x @ %d (%lf)\n", best_k, at_sample, max_diff);
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::write_maxes_report(const vector<double> &maxes)
-{
-    if (maxes.size() != 256 * m_numintervals) {
-        fprintf(stderr, "invalid # of maxes in write_maxes_report\n");
-        return;
-    }
-
-    for (size_t i = 0; i < m_numintervals; ++i) {
-        const double *m = &maxes[i * 256];
-        m_omax << scientific << m_interval * (i + 1) << ',';
-        for (int k = 0; k < 256; ++k) m_omax << m[k] << ',';
-        m_omax << endl;
-    }
-}
-
-// -----------------------------------------------------------------------------
-void attack_engine::write_confs_report(const vector<double> &maxes)
-{
-    if (maxes.size() != 256 * m_numintervals) {
-        fprintf(stderr, "invalid # of maxes in write_confs_report\n");
-        return;
-    }
-
-    for (size_t i = 0; i < m_numintervals; ++i) {
-        // compute the confidence ratio for each key guess in this interval
-        for (int k = 0; k < 256; ++k) {
-            double correct = maxes[i * 256 + k];
-            double incorrect = 0.0;
-            for (int j = 0; j < 256; ++j)
-                if (j != k) incorrect = max(incorrect, maxes[i * 256 + j]);
-            m_conf << (correct / incorrect) << ',';
-        }
-        m_conf << endl;
-    }
-}
-
-// -----------------------------------------------------------------------------
-bool attack_engine::attack_setup(const string &odir)
-{
-    if (!util::valid_output_dir(odir))
+    if (!util::valid_output_directory(results))
         return false;
 
-    // open the results file descriptors well in advance so we don't have to
-    // bail out after a particularly lengthy attack
-    if (!open_out(util::concat_name(odir, m_prefix + "_diffs.csv"), m_odif) ||
-        !open_out(util::concat_name(odir, m_prefix + "_maxes.csv"), m_omax) || 
-        !open_out(util::concat_name(odir, m_prefix + "_confs.csv"), m_conf))
-        return false;
+    m_diffs = util::concat_name(results, prefix + "differentials.csv");
+    m_confs = util::concat_name(results, prefix + "confidence_interval.csv");
+    m_maxes = util::concat_name(results, prefix + "maxes.csv");
 
-    // determine the number of traces and the order we will process them in
-    m_numtraces = m_reader->trace_count();
-    if (m_tracemax && m_tracemax < m_numtraces) {
-        printf("only processing %zu of %zu traces\n", m_tracemax, m_numtraces);
-        m_numtraces = m_tracemax;
-    }
+    const size_t num_traces = pReader->trace_count();
+    const size_t num_threads = (opt.num_threads > 0) ? opt.num_threads : 1;
 
-    // determine the number of interval reports, including the final report
-    if (m_interval <= 0) {
-        m_interval = m_numtraces;
-    }
-    else if (m_numthreads > 1) {
+    // process the user-specified attack options
+    m_reader   = pReader;
+    m_interval = opt.report_tick ? opt.report_tick : num_traces;
+    m_reports  = (num_traces / m_interval) + (num_traces % m_interval ? 1 : 0);
+    m_current  = 0;
+
+    // reporting interval is not supported when multithreading is enabled
+    if ((m_interval < num_traces) && (num_threads > 1)) {
         fprintf(stderr, "cannot set report interval with multiple threads\n");
         return false;
     }
 
-    m_numintervals = m_numtraces / m_interval;
-    if (m_numtraces % m_interval)
-        ++m_numintervals;
-    
-    m_params.put("num_events", m_times.size());
-    m_params.put("num_reports", m_numintervals);
+    // write the parameter map used to configure the attack instance
+    util::parameters param_map;
+    param_map.put("num_events", pReader->events().size());
+    param_map.put("num_reports", m_reports);
 
-    m_trace = 0;
-    m_threads.resize(m_numthreads);
-
-    for (size_t i = 0; i < m_numthreads; ++i) {
-        m_threads[i] = new attack_thread(i, this);
-        if (!m_threads[i]->create(m_attack, m_crypto, m_params))
+    foreach (const string &expr, util::split(opt.parameters, ",")) {
+        const size_t pos = expr.find_first_of('=');
+        if (string::npos == pos) {
+            fprintf(stderr, "bad parameter declaration: %s\n", expr.c_str());
             return false;
+        }
+        param_map.put(expr.substr(0, pos), expr.substr(pos + 1));
+    }
 
-        m_group.create_thread(boost::bind(&attack_thread::run, m_threads[i]));
+    // spawn the worker threads based on the specified thread count
+    for (size_t i = 0; i < num_threads; ++i) {
+        attack_thread *thread = new attack_thread(i, this);
+        if (!thread->create(opt.attack_name, opt.crypto_name, param_map)) {
+            fprintf(stderr, "failed to launch thread %zu\n", i);
+            return false;
+        }
+
+        // add the current worker to the thread group for joining
+        m_group.create_thread(boost::bind(&attack_thread::run, thread));
+        m_threads.push_back(thread);
     }
 
     return true;
@@ -229,70 +118,55 @@ bool attack_engine::attack_setup(const string &odir)
 // -----------------------------------------------------------------------------
 void attack_engine::attack_shutdown(void)
 {
+    attack_thread *first_thread = m_threads.front();
+    const int num_guesses = 1 << first_thread->crypto()->estimate_bits();
+
+    // if there are multiple worker threads, merge their results
+    printf("\n");
+    for (size_t i = 1; i < m_threads.size(); ++i) {
+        printf("coalescing thread instance [%zu]...\n", i);
+        first_thread->attack()->coalesce(m_threads[i]->attack());
+    }
+
+    // compute the final differential trace and write the attack results
     vector<double> diffs, maxes;
-    int k = 1 << m_threads[0]->crypto()->estimate_bits();
+    first_thread->attack()->get_diffs(diffs);
+    first_thread->attack()->get_maxes(maxes);
 
-    m_threads[0]->attack()->get_diffs(diffs);
-    m_threads[0]->attack()->get_maxes(maxes);
-
-    write_diffs_report(diffs, k);
+    write_diffs_report(diffs, num_guesses);
     write_maxes_report(maxes);
     write_confs_report(maxes);
 
-    foreach (attack_thread *thrd, m_threads) {
-        delete thrd;
-    }
-}
-
-// -----------------------------------------------------------------------------
-bool attack_engine::run(const string &results_path)
-{
-    BENCHMARK_DECLARE(attack_whole);
-
-    if (!attack_setup(results_path))
-        return false;
-
-    printf("attacking with %zu trace(s)...\n", m_numtraces);
-
-    m_group.join_all();
-
-    // if there are multiple worker threads, merge their results
-    for (size_t i = 1; i < m_threads.size(); ++i) {
-        printf("coalescing thread instance [%zu]...\n", i);
-        m_threads[0]->attack()->coalesce(m_threads[i]->attack());
-    }
-
-    attack_shutdown();
-
-    BENCHMARK_SAMPLE(attack_whole);
-    return true;
+    // finally, destroy the threads themselves
+    foreach (attack_thread *thread, m_threads) delete thread;
+    m_threads.clear();
 }
 
 // -----------------------------------------------------------------------------
 // Read in the next available power trace and generate the trace's event map.
 bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
 {
+    const string trace_text(util::btoa(pt.text()));
     {
         // lock the next power trace selection to avoid race conditions
         boost::lock_guard<boost::mutex> lock(m_mutex);
-        if (m_trace >= m_numtraces)
+
+        // if there are no more traces left, signal threads to terminate
+        const size_t num_traces = m_reader->trace_count();
+        if (m_current >= num_traces)
             return false;
 
-        if (m_trace && !(m_trace % m_interval)) {
-            printf("report interval %zu...\n", m_trace / m_interval);
-            m_threads[0]->attack()->record_interval(m_trace / m_interval);
-        }
+        if (m_current && !(m_current % m_interval))
+            m_threads[0]->attack()->record_interval(m_current / m_interval);
 
         // request the next power trace from the trace reader
-        trace::time_range range(0, 0);
-        if (!m_reader->read(pt, range)) {
-            fprintf(stderr, "[%d] failed to read trace %zu\n", id, m_trace + 1);
+        if (!m_reader->read(pt)) {
+            fprintf(stderr, "[%d] failed to read trace %zu\n", id, m_current + 1);
             return false;
         }
 
-        const string trace_text(util::btoa(pt.text()));
-        printf("processing trace %s [%d:%zu/%zu]\n",
-               trace_text.c_str(), id, ++m_trace, m_numtraces);
+        printf("processing trace %s [%d:%zu/%zu]\r",
+               trace_text.c_str(), id, ++m_current, num_traces);
     }
 
     if (tmap.size() && tmap.size() != pt.size()) {
@@ -304,5 +178,94 @@ bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
     for (size_t s = 0; s < pt.size(); ++s) tmap[s] = s;
 
     return true;
+}
+
+// -----------------------------------------------------------------------------
+void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
+{
+    const size_t num_events = m_reader->events().size();
+    if (diffs.size() != nk * num_events) {
+        fprintf(stderr, "invalid # of differentials in write_diffs_report\n");
+        return;
+    }
+
+    // attempt to open the differential report file for writing
+    ofstream report(m_diffs.c_str());
+    if (!report.is_open()) {
+        fprintf(stderr, "failed to open '%s' for writing\n", m_diffs.c_str());
+        return;
+    }
+
+    int best_k = -1, at_sample = -1;
+    double max_diff = 0.0;
+    size_t sample_number = 0;
+
+    foreach (uint32_t sample_time, m_reader->events()) {
+        report << scientific << sample_time << ',';
+        for (int k = 0; k < nk; ++k) {
+            double value = diffs[k * num_events + sample_number];
+            report << value << ',';
+            if (fabs(value) > max_diff) {
+                max_diff = fabs(value);
+                best_k = k;
+                at_sample = sample_number;
+            }
+        }
+        report << endl;
+        ++sample_number;
+    }
+
+    printf("best key guess = %02x @ %d (%lf)\n", best_k, at_sample, max_diff);
+}
+
+// -----------------------------------------------------------------------------
+void attack_engine::write_maxes_report(const vector<double> &maxes)
+{
+    if (maxes.size() != 256 * m_reports) {
+        fprintf(stderr, "invalid # of maxes in write_maxes_report\n");
+        return;
+    }
+
+    // attempt to open the confidence interval report file for writing
+    ofstream report(m_maxes.c_str());
+    if (!report.is_open()) {
+        fprintf(stderr, "failed to open '%s' for writing\n", m_maxes.c_str());
+        return;
+    }
+
+    for (size_t i = 0; i < m_reports; ++i) {
+        const double *m = &maxes[i * 256];
+        report << scientific << m_interval * (i + 1) << ',';
+        for (int k = 0; k < 256; ++k) report << m[k] << ',';
+        report << endl;
+    }
+}
+
+// -----------------------------------------------------------------------------
+void attack_engine::write_confs_report(const vector<double> &maxes)
+{
+    if (maxes.size() != 256 * m_reports) {
+        fprintf(stderr, "invalid # of maxes in write_confs_report\n");
+        return;
+    }
+
+    // attempt to open the confidence interval report file for writing
+    ofstream report(m_confs.c_str());
+    if (!report.is_open()) {
+        fprintf(stderr, "failed to open '%s' for writing\n", m_confs.c_str());
+        return;
+    }
+
+    for (size_t i = 0; i < m_reports; ++i) {
+        // compute the confidence ratio for each key guess in this interval
+        for (int k = 0; k < 256; ++k) {
+            double correct = maxes[i * 256 + k];
+            double incorrect = 0.0;
+            for (int j = 0; j < 256; ++j)
+                if (j != k) incorrect = max(incorrect, maxes[i * 256 + j]);
+            report << (correct / incorrect) << ',';
+        }
+        report << endl;
+    }
 }
 

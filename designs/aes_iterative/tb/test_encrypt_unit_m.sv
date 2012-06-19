@@ -15,14 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 `timescale 1ns/1ns
-`define MAX_ITERATION 5000
-`define MAX_ROUND     2
 
 module testbench;
-  logic clk = 0, rst = 0, valid_in = 0, valid_out;
+  logic       clk = 0, rst = 0, valid_in = 0, valid_out;
   logic [7:0] din = '0, imask = '0, omask = '0, dout;
   logic [3:0] rnd;
-  int fp_sim;
+  int fp_sim, iterations, max_rounds;
 
   aes_encrypt_unit_m dut(clk, rst, valid_in, din, imask, omask, valid_out, dout, rnd);
 
@@ -40,7 +38,13 @@ module testbench;
     fp_sim = $fopen("simulation.txt", "w");
     @(posedge clk);
 
-    for (int i = 0; i < `MAX_ITERATION; i++) begin
+    if (!$value$plusargs("iterations=%d", iterations))
+        iterations = 1000;
+    if (!$value$plusargs("max_rounds=%d", max_rounds))
+        max_rounds = 2;
+
+    for (int i = 0; i < iterations; i++) begin
+      // create a random 128-bit message block and imask/omask
       automatic iteration_state msg = new;
       void'(msg.randomize());
 
@@ -65,7 +69,7 @@ module testbench;
       valid_in = 0;
 
       // retrieve the output ciphertext
-      wait(rnd == `MAX_ROUND || valid_out == 1);
+      wait(rnd == max_rounds || valid_out == 1);
       for (int i = 0; i < 16; i++) @(posedge clk) msg.text[i] = dout;
       @(posedge clk);
 
@@ -75,6 +79,7 @@ module testbench;
     // wait for a few clock cycles, then terminate the simulation
     for (int i = 0; i < 4; i++) @(posedge clk);
 
+    // close the file descriptor and terminate the simulation
     $fclose(fp_sim);
     $finish;
   end

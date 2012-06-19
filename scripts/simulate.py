@@ -1,15 +1,32 @@
 #!/usr/bin/env python
 
-import os, shutil, subprocess, tarfile, threading
+import datetime, os, shutil, subprocess, tarfile, time, threading
 
 # ------------------------------------------------------------------------------
-class simulation_thread(threading.Thread):
-    def __init__(self, build_cmd, work_path, sema, quiet):
-        threading.Thread.__init__(self)
-        self.build_cmd = build_cmd
-        self.work_path = work_path
-        self.sema      = sema
-        self.quiet     = quiet
+class AbstractWorkerThread(threading.Thread):
+    def __init__(self, index, run_cmd, work_path, sema, quiet, bzip2):
+        super(AbstractWorkerThread, self).__init__()
+        self.index     = index              # thread index
+        self.run_cmd   = run_cmd            # the command to execute
+        self.work_path = work_path          # working directory for process
+        self.sema      = sema               # semaphore to limit maximum DOP
+        self.quiet     = quiet              # redirect output to a file
+        self.bzip2     = bzip2              # compress the simulation results
+        self.lock      = threading.Lock()   # synchronize access to status
+        self.status    = 'allocated'        # current worker status to report
+
+    def set_status(self, status):
+        with self.lock:
+            self.status = status
+
+    def get_status(self):
+        with self.lock:
+            return self.status
+
+# ------------------------------------------------------------------------------
+class LocalWorker(AbstractWorkerThread):
+    def __init__(self, index, run_cmd, work_path, sema, quiet, bzip2):
+        super(LocalWorker, self).__init__(index, run_cmd, work_path, sema, quiet, bzip2)
 
     def run(self):
         if self.quiet:
@@ -20,11 +37,61 @@ class simulation_thread(threading.Thread):
             fp_stderr = None
 
         self.sema.acquire()
-        print self.getName(), 'spawning', self.build_cmd, 'in', self.work_path
-        child = subprocess.Popen(self.build_cmd, cwd=self.work_path,
+        print self.name, 'spawning', self.run_cmd, 'in', self.work_path
+        child = subprocess.Popen(self.run_cmd, cwd=self.work_path,
                                  stdout=fp_stdout, stderr=fp_stderr)
         child.wait()
-        print self.getName(), 'completed'
+        print self.name, 'completed'
+        self.sema.release()
+
+# ------------------------------------------------------------------------------
+class GridWorker(AbstractWorkerThread):
+    def __init__(self, index, run_cmd, work_path, sema, quiet, bzip2):
+        super(GridWorker, self).__init__(index, run_cmd, work_path, sema, quiet, bzip2)
+
+    def gen_script(self, path):
+        sim_txt = 'simulation_{}.txt'.format(self.index)
+        pow_out = 'power_waveform_{}.out'.format(self.index)
+        with open(path, 'w') as fp:
+            fp.write('#!/bin/bash\n')
+            fp.write('#$ -N sim-' + self.name + '\n')
+            fp.write('#$ -o qsub-output.log\n')
+            fp.write('#$ -j y\n')
+            fp.write('#$ -wd ' + self.work_path + '\n')
+            fp.write(' '.join(self.run_cmd) + '\n')
+            fp.write('mv simulation.txt {}\n'.format(sim_txt))
+            fp.write('mv power_waveform.out {}\n'.format(pow_out))
+            if self.bzip2:
+                dest = 'simulation_results_{}.tar.bz2'.format(self.index)
+                fp.write('tar cvjf {} {} {} > compress.log\n'.format(dest, sim_txt, pow_out))
+                fp.write('mv {} {} {} ../\n'.format(dest, sim_txt, pow_out))
+            else:
+                fp.write('mv {} {} ../\n'.format(sim_txt, pow_out))
+            fp.write('touch .complete\n')
+
+    def run(self):
+        exec_path = os.path.join(self.work_path, 'qsub-exec.sh')
+        self.gen_script(exec_path)
+
+        self.sema.acquire()
+        print self.name, 'queueing', self.run_cmd
+
+        try:
+            subprocess.call([ 'qsub', '-V', exec_path ])
+            self.set_status('submitted')
+            while not os.path.exists(os.path.join(self.work_path, '.complete')):
+                time.sleep(1)
+                if os.path.exists(os.path.join(self.work_path, 'compress.log')):
+                    self.set_status('compressing')
+                elif os.path.exists(os.path.join(self.work_path, 'simulate.log')):
+                    self.set_status('simulating')
+                elif os.path.exists(os.path.join(self.work_path, 'compile.log')):
+                    self.set_status('compiling')
+            self.set_status('done')
+        except:
+            self.set_status('error')
+            print self.name, '- error: unable to launch qsub'
+
         self.sema.release()
 
 # ------------------------------------------------------------------------------
@@ -34,11 +101,10 @@ def create_symlinks(src_path, names):
 
 # ------------------------------------------------------------------------------
 def compress_results(results):
-    tar = tarfile.open('simulation_results.tar.bz2', 'w:bz2')
-    for name in results:
-        print 'adding', name, 'to archive...'
-        tar.add(name)
-    tar.close()
+    with tarfile.open('simulation_results.tar.bz2', 'w:bz2') as tar:
+        for name in results:
+            print 'adding', name, 'to archive...'
+            tar.add(name)
 
 # ------------------------------------------------------------------------------
 def parse_command_line():
@@ -67,6 +133,8 @@ def parse_command_line():
                    help='add results to a bzip2 compressed archive')
     p.add_argument('--quiet', action='store_true',
                    help='write process output to a file')
+    p.add_argument('--qsub', action='store_true',
+                   help='distribute jobs using the sun grid engine')
     
     # parse and validate the command line arguments
     args = p.parse_args()
@@ -91,24 +159,22 @@ if __name__ == '__main__':
     args = parse_command_line()
 
     # construct the command line to invoke (make target and design unit)
-    build_cmd = ['make', args.target, 'AMD64=1' if args.amd64 else 'AMD64=0']
+    run_cmd = ['make', args.target, 'AMD64=1' if args.amd64 else 'AMD64=0']
     if args.seed != None:
-        build_cmd.append('SEED=' + args.seed)
+        run_cmd.append('SEED=' + args.seed)
     if args.unit != None:
-        build_cmd.append('UNIT=' + args.unit)
+        run_cmd.append('UNIT=' + args.unit)
     if args.vplus != None:
-        build_cmd.append('PLUS="' + args.vplus + '"')
+        run_cmd.append('PLUS="' + args.vplus + '"')
     
     proj_abs = os.path.abspath(args.proj)
     os.chdir(args.work)
     
-    threads = []
-    results = []
-
     # create a semaphore to enforce the maximum degree of parallelism allowed
     max_dop = min([args.dop, args.inst]) if args.dop > 0 else args.inst
     sema = threading.BoundedSemaphore(value=max_dop)
 
+    threads = []
     for i in range(args.inst):
         # create the temporary working directory, and link the specified design
         work_path = 'work_' + str(i)
@@ -124,21 +190,21 @@ if __name__ == '__main__':
         os.chdir('..')
     
         # spawn the subprocess thread to kick off the simulation
-        t = simulation_thread(build_cmd, work_abs, sema, args.quiet)
+        if (args.qsub):
+            t = GridWorker(i, run_cmd, work_abs, sema, args.quiet, args.bzip2)
+        else:
+            t = LocalWorker(i, run_cmd, work_abs, sema, args.quiet, args.bzip2)
         t.start()
         threads.append(t)
-    
-    for i in range(args.inst):
-        threads[i].join()
-        sim_path = 'work_' + str(i) + '/simulation.txt'
-        pow_path = 'work_' + str(i) + '/power_waveform.out'
-        if os.path.isfile(sim_path):
-            os.rename(sim_path, 'simulation_' + str(i) + '.txt')
-            results.append('simulation_' + str(i) + '.txt')
-        if os.path.isfile(pow_path):
-            os.rename(pow_path, 'power_waveform_' + str(i) + '.out')
-            results.append('power_waveform_' + str(i) + '.out')
 
-    if args.bzip2:
-        compress_results(results)
+    # wait for running threads to complete, print status every 5 seconds
+    while threading.active_count() > 1:
+        print '\nwaiting on', threading.active_count() - 1, 'running tasks'
+        print datetime.datetime.now(), ': sleeping for 5 seconds...\n';
+        time.sleep(5)
+
+        print 'task-name           status                                  '
+        print '------------------------------------------------------------'
+        for thread in threads:
+            print '{:<20}{}'.format(thread.name, thread.get_status())
 

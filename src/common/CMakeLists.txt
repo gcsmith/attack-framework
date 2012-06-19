@@ -17,12 +17,6 @@ set(common_hdr
     grostl.h
     trace.h
     trace_format.h
-    trace_format_out.h
-    trace_format_packed.h
-    trace_format_simv.h
-    trace_format_v1.h
-    trace_format_v2.h
-    trace_format_v3.h
     utility.h
 )
 
@@ -38,7 +32,6 @@ set(common_src
     cmdline.cpp
     des.cpp
     grostl.cpp
-    trace.cpp
     trace_format.cpp
     trace_format_out.cpp
     trace_format_packed.cpp
@@ -50,7 +43,6 @@ set(common_src
 )
 
 if(SQLITE3_FOUND)
-    list(APPEND common_hdr trace_format_sqlite.h)
     list(APPEND common_src trace_format_sqlite.cpp)
 endif(SQLITE3_FOUND)
 

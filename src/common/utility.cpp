@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 #include "utility.h"
 
 using namespace std;
@@ -28,7 +29,7 @@ namespace fs = boost::filesystem;
 namespace util {
 
 // -----------------------------------------------------------------------------
-bool valid_input_dir(const string &path)
+bool valid_input_directory(const string &path)
 {
     // verify that the specified input path exists and is a directory
     if (!fs::exists(path) || !fs::is_directory(path)) {
@@ -39,7 +40,7 @@ bool valid_input_dir(const string &path)
 }
 
 // -----------------------------------------------------------------------------
-bool valid_output_dir(const string &path)
+bool valid_output_directory(const string &path)
 {
     // create output directory if it doesn't exist
     if (!fs::exists(path) && !fs::create_directory(path)) {
@@ -56,20 +57,39 @@ bool valid_output_dir(const string &path)
 }
 
 // -----------------------------------------------------------------------------
-bool scan_directory(const string &in_path, const string &ext, pathlist &paths)
+size_t glob(const string &path, const string &pattern, vector<string> &out)
 {
-    if (!fs::is_directory(in_path))
-        return false;
+    if (!fs::is_directory(path))
+        return 0;
 
-    fs::directory_iterator begin(in_path), end;
-    foreach (fs::path path, make_pair(begin, end)) {
-        const string name(path.string());
-        if (boost::ends_with(name, ext))
-            paths.push_back(name);
+    const boost::regex regex_pattern(pattern);
+    fs::directory_iterator iter_begin(path), iter_end;
+
+    foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
+        if (regex_search(curr_path.string(), regex_pattern))
+            out.push_back(curr_path.string());
     }
 
-    sort(paths.begin(), paths.end());
-    return true;
+    sort(out.begin(), out.end());
+    return out.size();
+}
+
+// -----------------------------------------------------------------------------
+size_t glob_recursive(const string &path, const string &expr, vector<string> &out)
+{
+    if (!fs::is_directory(path))
+        return 0;
+
+    const boost::regex regex_pattern(expr);
+    fs::recursive_directory_iterator iter_begin(path), iter_end;
+
+    foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
+        if (regex_search(curr_path.string(), regex_pattern))
+            out.push_back(curr_path.string());
+    }
+
+    sort(out.begin(), out.end());
+    return out.size();
 }
 
 // -----------------------------------------------------------------------------
@@ -113,9 +133,21 @@ string btoa(const vector<uint8_t> &bytes)
 }
 
 // -----------------------------------------------------------------------------
-string base_name(const string &filename)
+string path_stem(const string &path)
 {
-    return fs::path(filename).stem();
+    return fs::path(path).stem();
+}
+
+// -----------------------------------------------------------------------------
+string path_extension(const string &path)
+{
+    return fs::path(path).extension();
+}
+
+// -----------------------------------------------------------------------------
+bool path_exists(const string &path)
+{
+    return fs::exists(path);
 }
 
 // -----------------------------------------------------------------------------
@@ -161,7 +193,7 @@ string &trim(string &str)
 }
 
 // -----------------------------------------------------------------------------
-bool is_dir(const string &path)
+bool is_directory(const string &path)
 {
     return fs::is_directory(path);
 }

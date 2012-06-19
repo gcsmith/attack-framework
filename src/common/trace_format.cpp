@@ -14,36 +14,77 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "trace_format_out.h"
-#include "trace_format_packed.h"
-#include "trace_format_simv.h"
-#include "trace_format_v1.h"
-#include "trace_format_v2.h"
-#include "trace_format_v3.h"
+#include <cassert>
+#include "trace_format.h"
+#include "utility.h"
 
-#ifdef HAVE_SQLITE3_H
-#include "trace_format_sqlite.h"
-#endif
+using namespace std;
+
+extern trace_reader *create_trace_reader_out(void);
+extern trace_reader *create_trace_reader_packed(void);
+extern trace_reader *create_trace_reader_simv(void);
+extern trace_reader *create_trace_reader_sqlite(void);
+extern trace_reader *create_trace_reader_v1(void);
+extern trace_reader *create_trace_reader_v2(void);
+extern trace_reader *create_trace_reader_v3(void);
+
+extern trace_writer *create_trace_writer_packed(void);
+extern trace_writer *create_trace_writer_sqlite(void);
+extern trace_writer *create_trace_writer_v3(void);
 
 // -----------------------------------------------------------------------------
-trace_reader *trace_reader::create(const std::string &format)
+// static
+string trace_reader::guess_format(const string &path)
 {
-    if (format == "out")
-        return new trace_reader_out();
-    else if (format == "packed")
-        return new trace_reader_packed();
-    else if (format == "simv")
-        return new trace_reader_simv();
+    if (!util::path_exists(path) || !util::is_directory(path)) {
+        // input path is a file, or does not exist, so determine type by name
+        const string ext(util::path_extension(path));
+
+        if (ext == ".bin" || ext == ".packed")
+            return "packed";
+        else if (ext == ".db" || ext == ".sqlite" || ext == ".sqlite3")
+            return "sqlite";
+        else if (string::npos != path.find("v1"))
+            return "v1";
+        else if (string::npos != path.find("v2"))
+            return "v2";
+        else if (string::npos != path.find("v3"))
+            return "v3";
+        else
+            return "out";
+    }
+    else {
+        // input path is a directory, so determine type by the files within
+        vector<string> filenames;
+
+        if (util::glob(path, ".*\\.out$", filenames))
+            return "out";
+        else if (util::glob(path, "simulation.*\\.txt$", filenames))
+            return "simv";
+        else if (util::glob(path, ".*\\.bin$", filenames))
+            return "v1";
+        else if (util::glob(path, ".*\\.csv$", filenames))
+            return "v2";
+        else if (util::glob(path, "text_.*\\.txt$", filenames))
+            return "v3";
+    }
+
+    return "packed"; // welp
+}
+
+// -----------------------------------------------------------------------------
+// static
+trace_reader *trace_reader::create(const string &format)
+{
+    if      (format == "out")    return create_trace_reader_out();
+    else if (format == "packed") return create_trace_reader_packed();
+    else if (format == "simv")   return create_trace_reader_simv();
+    else if (format == "v1")     return create_trace_reader_v1();
+    else if (format == "v2")     return create_trace_reader_v2();
+    else if (format == "v3")     return create_trace_reader_v3();
 #ifdef HAVE_SQLITE3_H
-    else if (format == "sqlite")
-        return new trace_reader_sqlite();
+    else if (format == "sqlite") return create_trace_reader_sqlite();
 #endif
-    else if (format == "v1")
-        return new trace_reader_v1();
-    else if (format == "v2")
-        return new trace_reader_v2();
-    else if (format == "v3")
-        return new trace_reader_v3();
     else {
         fprintf(stderr, "unknown trace_reader format: %s\n", format.c_str());
         return NULL;
@@ -51,20 +92,51 @@ trace_reader *trace_reader::create(const std::string &format)
 }
 
 // -----------------------------------------------------------------------------
-trace_writer *trace_writer::create(const std::string &format)
+// static
+bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
+                              const trace::event_set &events)
 {
-    if (format == "packed")
-        return new trace_writer_packed();
-#ifdef HAVE_SQLITE3_H
-    else if (format == "sqlite")
-        return new trace_writer_sqlite();
+    float last_power = 0.0f;
+    trace::event_set::const_iterator curr_event = events.begin();
+
+    foreach (const trace::sample sample, pt_in.samples()) {
+        // primetime may break the power sample into multiple events
+        if (pt_out.size() && pt_out.back().time == sample.time) {
+#if TRACE_SUM_DUPLICATES
+            pt_out.back().power += sample.power;
 #endif
-    else if (format == "v1")
-        return new trace_writer_v1();
-    else if (format == "v2")
-        return new trace_writer_v2();
-    else if (format == "v3")
-        return new trace_writer_v3();
+            continue;
+        }
+
+        // sample and hold by copying the previous power into each empty sample
+        while ((curr_event != events.end()) && (*curr_event < sample.time))
+            pt_out.push_back(trace::sample(*curr_event++, last_power));
+
+        assert(sample.time == *curr_event);
+        pt_out.push_back(trace::sample(*curr_event++, sample.power));
+
+#if TRACE_SAMPLE_AND_HOLD
+        // if this is disabled, last_power will always be 0 (ie. empty samples)
+        last_power = sample.power;
+#endif
+    }
+
+    // pad out (with sample and hold) any trailing samples, if necessary
+    while (curr_event != events.end())
+        pt_out.push_back(trace::sample(*curr_event++, last_power));
+
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+// static
+trace_writer *trace_writer::create(const string &format)
+{
+    if      (format == "packed") return create_trace_writer_packed();
+    else if (format == "v3")     return create_trace_writer_v3();
+#ifdef HAVE_SQLITE3_H
+    else if (format == "sqlite") return create_trace_writer_sqlite();
+#endif
     else {
         fprintf(stderr, "unknown trace_writer format: %s\n", format.c_str());
         return NULL;

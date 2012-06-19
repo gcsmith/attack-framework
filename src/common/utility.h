@@ -25,15 +25,13 @@
 #include <sstream>
 #include <boost/foreach.hpp>
 
-#define EPSILON 0.00001
-
-#define ENABLE_BENCHMARK
-
-#define foreach     BOOST_FOREACH
-#define foreach_r   BOOST_REVERSE_FOREACH
-
+#define EPSILON         0.00001
 #define NUM_ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
 
+#define foreach         BOOST_FOREACH
+#define foreach_r       BOOST_REVERSE_FOREACH
+
+#define ENABLE_BENCHMARK
 #ifdef ENABLE_BENCHMARK
 
 #define BENCHMARK_DECLARE(n)                                                   \
@@ -59,61 +57,71 @@
 
 namespace util {
 
-typedef std::vector<std::string> pathlist;
+//! Returns true if the specified path exists and is a directory.
+bool valid_input_directory(const std::string &path);
 
-// Returns true if the specified path exists and is a directory.
-bool valid_input_dir(const std::string &path);
+//! Returns true if the specified path exists and is a directory, or creates it.
+bool valid_output_directory(const std::string &path);
 
-// Returns true if the specified path exists and is a directory, or creates it.
-bool valid_output_dir(const std::string &path);
+//! Glob files under directory 'path' matching the specified regex.
+size_t glob(const std::string &path, const std::string &pattern,
+            std::vector<std::string> &out);
 
-// Return a list of the files in a directory matching the specified extension.
-bool scan_directory(const std::string &i_dir, const std::string &ext, pathlist &paths);
+//! Recursively glob files under directory 'path' matching the specified regex.
+size_t glob_recursive(const std::string &path, const std::string &pattern,
+                      std::vector<std::string> &out);
 
-/// Convert a hexadecimal string into an array of bytes.
+//! Convert a hexadecimal string into an array of bytes.
 bool atob(const std::string &str, uint8_t *bytes, size_t count);
 
-/// Convert a hexadecimal string into an array of bytes.
+//! Convert a hexadecimal string into an array of bytes.
 std::vector<uint8_t> atob(const std::string &str);
 
-/// Convert an array of bytes into a hexadecimal string.
+//! Convert an array of bytes into a hexadecimal string.
 std::string btoa(const uint8_t *bytes, size_t count);
 
-/// Convert an array of bytes into a hexadecimal string.
+//! Convert an array of bytes into a hexadecimal string.
 std::string btoa(const std::vector<uint8_t> &bytes);
 
-// Returns the stem portion of a complete file path.
-std::string base_name(const std::string &filename);
+//! Returns the stem portion of a complete file path.
+std::string path_stem(const std::string &path);
 
-// Concatenate the specified directory and filename.
+//! Returns the extension portion of a complete file path.
+std::string path_extension(const std::string &path);
+
+//! Returns true if the specified path exists, false otherwise.
+bool path_exists(const std::string &path);
+
+//! Concatenate the specified directory and filename.
 std::string concat_name(const std::string &dir, const std::string &name);
 
-// Concatenate the specified directory, filename, and extension.
-std::string concat_name(const std::string &dir, const std::string &name, const std::string &ext);
+//! Concatenate the specified directory, filename, and extension.
+std::string concat_name(const std::string &dir, const std::string &name,
+                        const std::string &ext);
 
-// Split the input string using whitespace as delimiter.
+//! Split the input string using whitespace as delimiter.
 std::vector<std::string> split(const std::string &str);
 
-// Split the input string given a string of delimiters.
+//! Split the input string given a string of delimiters.
 std::vector<std::string> split(const std::string &str, const std::string &del);
 
-// Trim leading and trailing whitespace from string.
+//! Trim leading and trailing whitespace from string.
 std::string trim_copy(const std::string &str);
 
-// Trim leading and trailing whitespace from string.
+//! Trim leading and trailing whitespace from string.
 std::string &trim(std::string &str);
 
-// Returns true if the specified path is a directory.
-bool is_dir(const std::string &path);
+//! Returns true if the specified path is a directory.
+bool is_directory(const std::string &path);
 
-// Return x % m, where x may be negative
+//! Return x % m, where x may be negative
 inline int mod(int x, int m)
 {
     int r = x % m;
     return (r >= 0) ? r : r + m;
 }
 
-// Reverse the bits in a variable length integer.
+//! Reverse the bits in a variable length integer.
 inline int revb(int x, int bits)
 {
     int r = 0;
@@ -121,7 +129,7 @@ inline int revb(int x, int bits)
     return r;
 }
 
-// Reverse the bits in a 32-bit unsigned integer.
+//! Reverse the bits in a 32-bit unsigned integer.
 inline uint32_t rev32(uint32_t x)
 {
     uint32_t r = 0;
@@ -129,7 +137,7 @@ inline uint32_t rev32(uint32_t x)
     return r;
 }
 
-// Reverse the bits in a 64-bit unsigned integer.
+//! Reverse the bits in a 64-bit unsigned integer.
 inline uint64_t rev64(uint64_t x)
 {
     uint64_t r = 0;
@@ -137,7 +145,7 @@ inline uint64_t rev64(uint64_t x)
     return r;
 }
 
-// Convert an array of 8 bytes into a reversed 64-bit unsigned integer.
+//! Convert an array of 8 bytes into a reversed 64-bit unsigned integer.
 inline uint64_t convert_bytes(const uint8_t *data)
 {
     uint64_t x = 0;

@@ -14,14 +14,47 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <vector>
+#include <fstream>
 #include <sstream>
 #include <cstdlib>
 #include <cassert>
+#include "trace_format.h"
 #include "utility.h"
-#include "trace_format_v3.h"
 
 using namespace std;
+
+// -----------------------------------------------------------------------------
+class trace_reader_v3: public trace_reader {
+public:
+    bool summary(const string &path) const;
+    bool open(const string &path, const options &opt);
+    void close();
+    bool read(trace &pt);
+    size_t trace_count(void) const             { return m_texts.size(); }
+    const trace::event_set &events(void) const { return m_events; }
+
+protected:
+    typedef vector<uint8_t> text_t;
+    trace::event_set m_events;
+    vector<text_t>   m_texts;
+    ifstream         m_wave_in;
+    string           m_line;
+    unsigned int     m_current;
+    unsigned long    m_tmin;
+    unsigned long    m_tmax;
+};
+
+// -----------------------------------------------------------------------------
+class trace_writer_v3: public trace_writer {
+public:
+    bool open(const string &path, const string &key, const trace::event_set &e);
+    void close(void);
+    bool write(const trace &pt);
+
+protected:
+    FILE *m_text_out;
+    FILE *m_wave_out;
+};
 
 // -----------------------------------------------------------------------------
 template <typename T>
@@ -35,15 +68,22 @@ size_t parse_data(const string &input, vector<T> &data, int base)
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_v3::summary(const string &path)
+// virtual
+bool trace_reader_v3::summary(const string &path) const
 {
+    // TODO: implement me
     return true;
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_v3::open(const string &path, const string &key, bool ct)
+// virtual
+bool trace_reader_v3::open(const string &path, const options &opt)
 {
-    const string text_file = ct ? "text_out.txt" : "text_in.txt";
+    m_tmin = opt.min_time;
+    m_tmax = opt.max_time;
+
+    // build complete paths to the message text and waveform data files
+    const string text_file = opt.ciphertext ? "text_out.txt" : "text_in.txt";
     const string text_path = util::concat_name(path, text_file);
     const string wave_path = util::concat_name(path, "wave.txt");
 
@@ -54,7 +94,8 @@ bool trace_reader_v3::open(const string &path, const string &key, bool ct)
     }
 
     text_t text;
-    while (getline(text_in, m_line) && parse_data(m_line, text, 16))
+    string curr_line, dummy;
+    while (getline(text_in, curr_line) && parse_data(curr_line, text, 16))
         m_texts.push_back(text);
     text_in.close();
 
@@ -64,18 +105,28 @@ bool trace_reader_v3::open(const string &path, const string &key, bool ct)
         return false;
     }
 
+    // consume the first line to determine the number of samples
+    getline(m_wave_in, curr_line);
+    istringstream iss(curr_line);
+    unsigned long num_samples = 0;
+    while (iss >> dummy) num_samples++;
+    for (unsigned long s = 0; s < num_samples; ++s) m_events.insert(s);
+
+    m_wave_in.seekg(0, ios::beg);
     m_current = 0;
     return true;
 }
 
 // -----------------------------------------------------------------------------
+// virtual
 void trace_reader_v3::close()
 {
     m_wave_in.close();
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_v3::read(trace &pt, const trace::time_range &range)
+// virtual
+bool trace_reader_v3::read(trace &pt)
 {
     if (m_current >= m_texts.size() || !getline(m_wave_in, m_line))
         return false;
@@ -90,17 +141,21 @@ bool trace_reader_v3::read(trace &pt, const trace::time_range &range)
     pt.set_text(m_texts[m_current++]);
 
     for (size_t i = 0; i < wave.size(); ++i) {
+        if (m_tmin && i < m_tmin) continue;
+        if (m_tmax && i > m_tmax) break;
+
         pt.push_back(trace::sample(i, (float)wave[i]));
-        m_events.insert(i);
     }
 
     return true;
 }
 
 // -----------------------------------------------------------------------------
-bool trace_writer_v3::open(const string &path, const string &key)
+// virtual
+bool trace_writer_v3::open(const string &path, const string &key,
+                           const trace::event_set &events)
 {
-    if (!util::valid_output_dir(path))
+    if (!util::valid_output_directory(path))
         return false;
 
     const string text_path = util::concat_name(path, "text_in.txt");
@@ -136,6 +191,7 @@ bool trace_writer_v3::open(const string &path, const string &key)
 }
 
 // -----------------------------------------------------------------------------
+// virtual
 void trace_writer_v3::close()
 {
     fclose(m_text_out);
@@ -143,6 +199,7 @@ void trace_writer_v3::close()
 }
 
 // -----------------------------------------------------------------------------
+// virtual
 bool trace_writer_v3::write(const trace &pt)
 {
     // write the plaintext or ciphertext for the current trace
@@ -158,4 +215,7 @@ bool trace_writer_v3::write(const trace &pt)
 
     return true;
 }
+
+register_trace_reader(v3, trace_reader_v3);
+register_trace_writer(v3, trace_writer_v3);
 

@@ -25,21 +25,15 @@
 using namespace std;
 
 // -----------------------------------------------------------------------------
-int convert_traces(trace_reader *pReader, trace_writer *pWriter,
-                   const trace::time_range &range, size_t max_trace,
-                   const string profile_path)
+int convert_traces(trace_reader *pReader, trace_writer *pWriter)
 {
     // determine the total number of traces to convert
     size_t trace_count = pReader->trace_count();
-    if (max_trace && max_trace < trace_count) {
-        printf("only processing %zu of %zu traces\n", max_trace, trace_count);
-        trace_count = max_trace;
-    }
 
     // read in each trace in source format and output in destination format
     trace pt;
     for (size_t i = 0; i < trace_count; ++i) {
-        if (!pReader->read(pt, range)) {
+        if (!pReader->read(pt)) {
             fprintf(stderr, "failed to read trace %zu\n", i + 1);
             return 1;
         }
@@ -49,11 +43,11 @@ int convert_traces(trace_reader *pReader, trace_writer *pWriter,
         }
 
         const string text(util::btoa(pt.text()));
-        printf("converted %s [%zu/%zu]\n", text.c_str(), i + 1, trace_count);
+        printf("converted %s [%zu/%zu]\r", text.c_str(), i + 1, trace_count);
     }
 
-    // write out the timing profile and close the reader/writer objects
-    trace::write_profile(profile_path, pReader->events());
+    printf("\nsuccessfully converted traces...\n");
+
     pReader->close();
     pWriter->close();
     return 0;
@@ -69,7 +63,6 @@ int main(int argc, char *argv[])
         { CL_STR,  "dest-fmt,d",    "convert to destination format" },
         { CL_STR,  "input-path,i",  "specify the input trace path" },
         { CL_STR,  "output-path,o", "specify the output trace path" },
-        { CL_STR,  "profile,P",     "specify the timing profile path" },
         { CL_STR,  "key,k",         "convert traces with the specified key" },
         { CL_LONG, "min-time,m",    "earliest sample event time to convert" },
         { CL_LONG, "max-time,M",    "latest sample event time to convert" },
@@ -86,37 +79,45 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // parse each command line argument from the variable map
-    string src_fmt  = cl.get_str("src-fmt", "packed");
-    string dst_fmt  = cl.get_str("dest-fmt", "sqlite");
-    string in_path  = cl.get_str("input-path", "trace_input_path");
-    string out_path = cl.get_str("output-path", "trace_output_path");
-    string profile  = cl.get_str("profile", "timing_profile.txt");
-    string key      = cl.get_str("key");
-    long time_min   = cl.get_long("min-time");
-    long time_max   = cl.get_long("max-time");
-    long num_traces = cl.get_long("num-traces");
-    bool ciphertext = cl.get_flag("ciphertext");
+    // determine the input trace file format, either specified or guessed
+    const string input_path = cl.get_str("input-path", "trace_input_path");
+    string src_fmt = cl.get_str("src-fmt", "auto");
+
+    if (src_fmt == "auto") {
+        src_fmt = trace_reader::guess_format(input_path);
+        printf("guessing trace src-format: %s\n", src_fmt.c_str());
+    }
+
+    // determine the output trace file format, either specified or guessed
+    const string output_path = cl.get_str("output-path", "trace_output_path");
+    string dst_fmt = cl.get_str("dst-fmt", "auto");
+
+    if (dst_fmt == "auto") {
+        dst_fmt = trace_reader::guess_format(output_path);
+        printf("guessing trace dst-format: %s\n", dst_fmt.c_str());
+    }
 
     // create reader and writer for specified source/destination trace formats
+    trace_reader::options opt;
+    opt.min_time   = cl.get_long("min-time");
+    opt.max_time   = cl.get_long("max-time");
+    opt.num_traces = cl.get_long("num-traces");
+    opt.ciphertext = cl.get_flag("ciphertext");
+    opt.key        = cl.get_str("key");
+
     auto_ptr<trace_reader> rd(trace_reader::create(src_fmt));
-    if (!rd.get())
-        return 1;
+    if (!rd.get()) return 1;
 
     // describe the input directory and exit when --summary is specified
-    if (cl.get_flag("summary")) {
-        rd->summary(in_path);
+    if (cl.get_flag("summary") || !rd->open(input_path, opt)) {
+        rd->summary(input_path);
         return 0;
     }
 
-    if (!rd->open(in_path, key, ciphertext))
-        return 1;
-
     auto_ptr<trace_writer> wr(trace_writer::create(dst_fmt));
-    if (!wr.get() || !wr->open(out_path, key))
+    if (!wr.get() || !wr->open(output_path, opt.key, rd->events()))
         return 1;
 
-    const trace::time_range range(time_min, time_max);
-    return convert_traces(rd.get(), wr.get(), range, num_traces, profile);
+    return convert_traces(rd.get(), wr.get());
 }
 

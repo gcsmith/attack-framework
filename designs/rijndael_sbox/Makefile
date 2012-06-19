@@ -3,13 +3,12 @@ AMD64 ?= 0
 SEED ?= random
 UNIT ?= simple_func
 PLUS ?=
+CLOG = compile.log
+SLOG = simulate.log
 
 ifeq ($(QUIET), 1)
-    CLOG = compile_$(UNIT).log &>/dev/null
-    SLOG = simulate_$(UNIT).log &>/dev/null
-else
-    CLOG = compile_$(UNIT).log
-    SLOG = simulate_$(UNIT).log
+    CLOG += &>/dev/null
+    SLOG += &>/dev/null
 endif
 
 ifeq ($(AMD64), 1)

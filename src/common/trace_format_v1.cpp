@@ -17,27 +17,48 @@
 #include <vector>
 #include <cassert>
 #include "agilent_reader.h"
-#include "trace_format_v1.h"
+#include "trace_format.h"
+#include "utility.h"
 
 using namespace std;
 
 // -----------------------------------------------------------------------------
-bool trace_reader_v1::summary(const string &path)
+class trace_reader_v1: public trace_reader {
+public:
+    bool summary(const string &path) const;
+    bool open(const string &path, const options &opt);
+    void close(void);
+    bool read(trace &pt);
+    size_t trace_count(void) const             { return m_paths.size(); }
+    const trace::event_set &events(void) const { return m_events; }
+
+protected:
+    trace::event_set m_events;
+    vector<string>   m_paths;
+    string           m_search;
+    unsigned int     m_current;
+    unsigned long    m_tmin;
+    unsigned long    m_tmax;
+};
+
+// -----------------------------------------------------------------------------
+// virtual
+bool trace_reader_v1::summary(const string &path) const
 {
     printf("describing: %s\n", path.c_str());
 
-    util::pathlist paths;
-    if (!util::scan_directory(path, ".bin", paths)) {
+    vector<string> paths;
+    if (!util::glob(path, ".*\\.bin$", paths)) {
         fprintf(stderr, "not a valid trace directory\n");
         return false;
     }
 
     set<string> keys;
-    for (util::pathlist::iterator i = paths.begin(); i != paths.end(); ++i) {
-        size_t beg = i->find("k=");
-        size_t end = i->find("_", beg);
+    foreach (const string &filename, paths) {
+        const size_t beg = filename.find("k=");
+        const size_t end = filename.find("_", beg);
         if (beg != string::npos && end != string::npos)
-            keys.insert(i->substr(beg + 2, end - beg - 2));
+            keys.insert(filename.substr(beg + 2, end - beg - 2));
     }
 
     printf("trace count: %zu\n", paths.size());
@@ -50,36 +71,39 @@ bool trace_reader_v1::summary(const string &path)
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_v1::open(const string &path, const string &key, bool ct)
+// virtual
+bool trace_reader_v1::open(const string &path, const options &opt)
 {
-    close();
+    m_tmin = opt.min_time;
+    m_tmax = opt.max_time;
 
     // get the full list of binary files located in the input directory
-    util::pathlist paths;
-    if (!util::scan_directory(path, ".bin", paths) || !paths.size()) {
+    vector<string> paths;
+    if (!util::glob(path, ".*\\.bin", paths) || !paths.size()) {
         fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
         return false;
     }
 
     // cull the list down to traces matching the specified key
-    const string search("k=" + key);
-    for (util::pathlist::iterator i = paths.begin(); i != paths.end(); ++i) {
-        if (string::npos != i->find(search))
-            m_paths.push_back(*i);
+    const string search("k=" + opt.key);
+    foreach (const string &filename, paths) {
+        if (string::npos != filename.find(search))
+            m_paths.push_back(filename);
     }
 
     if (!m_paths.size()) {
-        fprintf(stderr, "no traces found matching key: %s\n", key.c_str());
+        fprintf(stderr, "no traces found matching key: %s\n", opt.key.c_str());
         return false;
     }
 
     // select search string based on whether we want plaintext or ciphertext
-    m_search = ct ? "c=" : "m=";
+    m_search = opt.ciphertext ? "c=" : "m=";
     m_current = 0;
     return true;
 }
 
 // -----------------------------------------------------------------------------
+// virtual
 void trace_reader_v1::close()
 {
     m_events.clear();
@@ -87,7 +111,8 @@ void trace_reader_v1::close()
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_v1::read(trace &pt, const trace::time_range &range)
+// virtual
+bool trace_reader_v1::read(trace &pt)
 {
     if (m_current >= m_paths.size())
         return false;
@@ -127,15 +152,13 @@ bool trace_reader_v1::read(trace &pt, const trace::time_range &range)
         return false;
     }
 
-    for (int i = 0; i < wh.Points; ++i) {
+    for (unsigned long i = 0; i < (unsigned long)wh.Points; ++i) {
         // only record samples within the specified time range
-        if (range.first && i < range.first)
-            continue;
-        else if (range.second && i >= range.second)
-            break;
+        if (m_tmin && i < m_tmin) continue;
+        if (m_tmax && i > m_tmax) break;
 
         pt.push_back(trace::sample(i, data[i]));
-        m_events.insert(i);
+        m_events.insert(i); // FIXME
     }
 
     DestroyAnalogWaveform(data);
@@ -143,23 +166,5 @@ bool trace_reader_v1::read(trace &pt, const trace::time_range &range)
     return true;
 }
 
-// -----------------------------------------------------------------------------
-bool trace_writer_v1::open(const string &path, const string &key)
-{
-    assert(!"not implemented");
-    return false;
-}
-
-// -----------------------------------------------------------------------------
-void trace_writer_v1::close()
-{
-    assert(!"not implemented");
-}
-
-// -----------------------------------------------------------------------------
-bool trace_writer_v1::write(const trace &pt)
-{
-    assert(!"not implemented");
-    return false;
-}
+register_trace_reader(v1, trace_reader_v1);
 

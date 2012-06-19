@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <cmath>
 #include "attack_engine.h"
+#include "attack_manager.h"
 #include "crypto.h"
 
 using namespace std;

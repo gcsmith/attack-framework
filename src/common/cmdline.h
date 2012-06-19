@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-// description
+//! TODO: description
 enum cmdline_argtype {
     CL_TERM,
     CL_FLAG,
@@ -29,41 +29,41 @@ enum cmdline_argtype {
     CL_LONG,
 };
 
-// description
+//! TODO: description
 struct cmdline_option {
     cmdline_argtype type;
     const char *name;
     const char *desc;
 };
 
-// description
+//! TODO: description
 class cmdline {
 public:
-    // description
+    //! TODO: description
     cmdline(const cmdline_option *args, const std::string &usage);
 
-    // description
+    //! TODO: description
     ~cmdline();
 
-    // description
+    //! TODO: description
     bool parse(int argc, char *argv[]);
 
-    // description
+    //! TODO: description
     size_t count(const std::string &name);
 
-    // description
+    //! TODO: description
     void print_usage(void);
 
-    // description
-    std::string get_str(const std::string &name, const std::string &defval = "");
+    //! TODO: description
+    std::string get_str(const std::string &name, const std::string &def = "");
 
-    // description
+    //! TODO: description
     std::vector<std::string> get_strv(const std::string &name);
 
-    // description
-    long get_long(const std::string &name, long defval = 0);
+    //! TODO: description
+    long get_long(const std::string &name, long def = 0);
 
-    // description
+    //! TODO: description
     bool get_flag(const std::string &name);
 
 protected:

@@ -39,7 +39,7 @@ endif(GIT_FOUND)
 
 set(BUILD_VERSION "${DPA_VER_MAJ}.${DPA_VER_MIN}.${DPA_VER_REV}:${DPA_VER_ID}")
 
-set(boost_components filesystem program_options system thread)
+set(boost_components filesystem program_options regex system thread)
 find_package(Boost 1.46.1 COMPONENTS ${boost_components} REQUIRED)
 find_package(Sqlite3)
 

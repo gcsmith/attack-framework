@@ -14,91 +14,137 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <vector>
+#include <fstream>
 #include <cstdlib>
 #include <cassert>
-#include "trace_format_out.h"
+#include "utility.h"
+#include "trace_format.h"
 
 using namespace std;
 
 // -----------------------------------------------------------------------------
-bool trace_reader_out::summary(const string &path)
+class trace_reader_out: public trace_reader {
+public:
+    bool summary(const string &path) const;
+    bool open(const string &path, const options &opt);
+    void close();
+    bool read(trace &pt);
+    size_t trace_count(void) const             { return m_traces.size(); }
+    const trace::event_set &events(void) const { return m_events; }
+
+protected:
+    bool read_waveform_data(const string &path, unsigned long min_time,
+                            unsigned long max_time);
+
+    trace::event_set m_events;  // set of unique power event timestamps
+    vector<trace>    m_traces;  // power waveforms
+    unsigned int     m_current; // current trace index for ::read()
+};
+
+// -----------------------------------------------------------------------------
+// virtual
+bool trace_reader_out::summary(const string &path) const
 {
+    // TODO: implement trace_reader_out::summary
+    fprintf(stderr, "trace_reader_out::summary is not implemented\n");
     return true;
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_out::open(const string &path, const string &key, bool ct)
+// virtual
+bool trace_reader_out::open(const string &path, const options &opt)
 {
+    vector<string> paths;
+
     // get the full list of .out files located in the input directory
-    close();
-    if (!util::scan_directory(path, ".out", m_paths) || !m_paths.size()) {
+    if (!util::glob(path, ".*\\.out$", paths) || !paths.size()) {
         fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
         return false;
     }
+
+    // read in the waveform data for each scanned power trace
+    foreach (const string &trace_path, paths) {
+        if (!read_waveform_data(trace_path, opt.min_time, opt.max_time)) {
+            fprintf(stderr, "error parsing trace '%s'\n", trace_path.c_str());
+            return false;
+        }
+    }
+
     return true;
 }
 
 // -----------------------------------------------------------------------------
-void trace_reader_out::close()
+bool trace_reader_out::read_waveform_data(const string &path,
+                                          unsigned long min_time,
+                                          unsigned long max_time)
 {
-    m_events.clear();
-    m_paths.clear();
-    m_current = 0;
-}
-
-// -----------------------------------------------------------------------------
-bool trace_reader_out::read(trace &pt, const trace::time_range &range)
-{
-    if (m_current >= m_paths.size())
-        return false;
-
-    const string path(m_paths[m_current++]);
-    const string name(util::base_name(path));
-
     // attempt to open and parse the trace file
     ifstream fin(path.c_str());
     if (!fin.is_open()) {
-        fprintf(stderr, "unable to open %s for reading\n", path.c_str());
+        fprintf(stderr, "unable to open '%s' for reading\n", path.c_str());
         return false;
     }
 
     // parse the plain/ciphertext from the trace filename
+    const string name(util::path_stem(path));
     vector<uint8_t> text;
+
     foreach (const string &token, util::split(name, "_."))
         text.push_back(strtol(token.c_str(), NULL, 16));
 
-    pt.clear();
-    pt.set_text(text);
-    pt.set_format(trace::FMT_IDX_U32_PWR_F32);
+    // initialize the trace object with the extracted message text
+    m_traces.push_back(trace(text));
+    trace &curr_trace = m_traces.back();
 
-    string line;
-    while (getline(fin, line)) {
-        if (line[0] == 'd') {
+    string curr_line;
+    while (getline(fin, curr_line)) {
+        if (curr_line[0] == 'd') {
             // "done" indicates the end of the trace file
             break;
         }
-        else if (line[0] == '2' && line[1] == ' ') {
+        else if (curr_line[0] == '1' && curr_line[1] == ' ') {
             // power value, update the current trace entry
-            if (pt.size() <= 0) {
+            if (curr_trace.size() <= 0) {
                 fprintf(stderr, "error: read power sample before event time\n");
                 return false;
             }
-            pt[pt.size() - 1].power += strtof(&line[2], NULL);
+            curr_trace.back().power += strtof(&curr_line[2], NULL);
         }
         else {
             // time index -- add a new trace entry, break if max time reached
-            long sample_time = strtol(&line[0], NULL, 10);
-            if (range.first && sample_time < range.first)
-                continue;
-            if (range.second && sample_time >= range.second)
-                break;
+            const unsigned long sample_time = strtol(&curr_line[0], NULL, 10);
+            if (min_time && sample_time < min_time) continue;
+            if (max_time && sample_time > max_time) break;
 
-            pt.push_back(trace::sample(sample_time, 0.0));
+            curr_trace.push_back(trace::sample(sample_time, 0.0));
             m_events.insert(sample_time);
         }
     }
-
     return true;
 }
+
+// -----------------------------------------------------------------------------
+// virtual
+void trace_reader_out::close()
+{
+    m_events.clear();
+    m_traces.clear();
+    m_current = 0;
+}
+
+// -----------------------------------------------------------------------------
+// virtual
+bool trace_reader_out::read(trace &pt)
+{
+    if (m_current >= m_traces.size())
+        return false;
+
+    // initialize the trace object with the previously extracted message text
+    pt.clear();
+    pt.set_text(m_traces[m_current].text());
+
+    return trace_reader::copy_trace(m_traces[m_current++], pt, m_events);
+}
+
+register_trace_reader(out, trace_reader_out);
 

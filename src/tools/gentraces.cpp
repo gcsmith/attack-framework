@@ -34,7 +34,6 @@ int main(int argc, char *argv[])
         { CL_STR,  "dest-fmt,d",    "convert to destination format" },
         { CL_STR,  "output-path,o", "specify the output trace path" },
         { CL_STR,  "crypto,c",     "cryptographic function name" },
-        { CL_STR,  "profile,P",     "specify the timing profile path" },
         { CL_STR,  "key,k",         "convert traces with the specified key" },
         { CL_LONG, "num-traces,n",  "maximum number of traces to process" },
         { CL_LONG, "num-samples,s", "number of samples per trace" },
@@ -55,15 +54,17 @@ int main(int argc, char *argv[])
 
     string dst_fmt   = cl.get_str("dest-fmt", "packed");
     string out_path  = cl.get_str("output-path", "experiment.bin");
-    string profile   = cl.get_str("profile", "timing_profile.txt");
     string crypto    = cl.get_str("crypto", "aes_hd_r0");
     string key_str   = cl.get_str("key");
     long num_traces  = cl.get_long("num-traces", 1000);
     long num_samples = cl.get_long("num-samples", 5000);
 
+    trace::event_set events;
+    for (long i = 0; i < num_samples; ++i) events.insert(i);
+
     // create the writer for the specified destination trace format
     auto_ptr<trace_writer> pWriter(trace_writer::create(dst_fmt));
-    if (!pWriter.get() || !pWriter->open(out_path, key_str)) {
+    if (!pWriter.get() || !pWriter->open(out_path, key_str, events)) {
         fprintf(stderr, "failed to open trace writer\n");
         return 1;
     }
@@ -115,12 +116,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    trace::event_set events;
-    for (int s = 0; s < num_samples; ++s)
-        events.insert(s);
-
-    // write out the timing profile and close the writer object
-    trace::write_profile(profile, events);
     pWriter->close();
     return 0;
 }

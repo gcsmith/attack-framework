@@ -19,21 +19,11 @@
 
 #include <stdint.h>
 #include <vector>
-#include <string>
 #include <set>
 
 class trace {
 public:
-    typedef std::set<long> event_set;
-    typedef std::vector<long> event_list;
-    typedef std::pair<long, long> time_range;
-
-    enum TraceBinFormat {
-        FMT_PWR_S16,            // no time index, int16 sample
-        FMT_PWR_F32,            // no time index, float32 sample
-        FMT_IDX_U32_PWR_S16,    // uint32 time index, int16 sample
-        FMT_IDX_U32_PWR_F32,    // uint32 time index, float32 sample
-    };
+    typedef std::set<uint32_t> event_set;
 
     struct sample {
         sample(void) { }
@@ -43,61 +33,52 @@ public:
         float power;
     };
 
-    /// default constructor - create width default size of 4096 samples
-    trace(void) : m_samples(4096) { }
+    //! create an empty trace
+    trace(void) { }
 
-    /// create trace with specified number of samples
-    trace(size_t n) : m_samples(n) { }
+    //! create an empty trace with the specified message text
+    trace(const std::vector<uint8_t> &text) : m_text(text) { }
 
-    // return constant reference to this trace's samples
-    const std::vector<sample> &samples(void) const { return m_samples; }
+    //! initialize a trace with the specified message text and sample data
+    trace(const std::vector<uint8_t> &text, const std::vector<sample> &samples)
+    : m_text(text), m_samples(samples) { }
 
-    // access a specific sample index
-    const sample &operator[](size_t i) const { return m_samples[i]; }
-
-    // access a specific sample index
-    sample &operator[](size_t i) { return m_samples[i]; }
-
-    // access the last sample
-    sample &back(void) { return m_samples.back(); }
-
-    // return the number of samples in this trace
-    size_t size(void) const { return m_samples.size(); }
-
-    // remove all samples from the trace
-    void clear(void) { m_samples.clear(); }
-
-    // set the maximum number of samples in this trace
-    void resize(size_t n) { m_samples.resize(n); }
-
-    // add a new sample to the trace
-    void push_back(const sample &data) { m_samples.push_back(data); }
-
-    // set the plaintext or ciphertext value
+    //! set the plaintext or ciphertext value
     void set_text(const std::vector<uint8_t> &data) { m_text = data; } 
 
-    // get the plaintext or ciphertext value
+    //! get the plaintext or ciphertext value
     const std::vector<uint8_t> &text(void) const { return m_text; }
 
-    // set the sample binary format
-    void set_format(TraceBinFormat fmt) { m_format = fmt; }
+    //! set the sample data from an existing vector
+    void set_samples(const std::vector<sample> &data) { m_samples = data; }
 
-    // get the sample binary format
-    TraceBinFormat format(void) const { return m_format; }
+    //! return constant reference to this trace's samples
+    const std::vector<sample> &samples(void) const { return m_samples; }
 
-    // Expand trace to cover the specified list of sample events.
-    void sample_and_hold(const trace &pt, const std::vector<long> &times);
+    //! access a specific sample index (read-only)
+    const sample &operator[](size_t i) const { return m_samples[i]; }
 
-    // Read in the trace timing profile (ordered list of event indices).
-    static bool read_profile(const std::string &i_path, event_list &evt);
+    //! access a specific sample index
+    sample &operator[](size_t i) { return m_samples[i]; }
 
-    // Write out the trace timing profile (ordered list of event indices).
-    static bool write_profile(const std::string &o_path, const event_set &evt);
+    //! add a new sample to the trace
+    void push_back(const sample &data) { m_samples.push_back(data); }
+
+    //! access the last sample
+    sample &back(void) { return m_samples.back(); }
+
+    //! return the number of samples in this trace
+    size_t size(void) const { return m_samples.size(); }
+
+    //! remove all samples from the trace
+    void clear(void) { m_samples.clear(); }
+
+    //! set the maximum number of samples in this trace
+    void resize(size_t n) { m_samples.resize(n); }
 
 protected:
-    std::vector<sample>  m_samples;
     std::vector<uint8_t> m_text;
-    TraceBinFormat       m_format;
+    std::vector<sample>  m_samples;
 };
 
 #endif // TRACE__H

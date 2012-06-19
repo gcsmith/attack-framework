@@ -18,10 +18,10 @@ set(reference_src
     TraceShrinker.java
 )
 
-if(Java_Development_FOUND)
+if(Java_FOUND)
     include(UseJava)
     add_jar(reference ${reference_src})
-else(Java_Development_FOUND)
+else(Java_FOUND)
     message("WARNING: skipping reference. JDK not found")
-endif(Java_Development_FOUND)
+endif(Java_FOUND)
 

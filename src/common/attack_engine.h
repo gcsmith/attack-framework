@@ -17,98 +17,68 @@
 #ifndef ATTACK_ENGINE__H
 #define ATTACK_ENGINE__H
 
-#include <fstream>
 #include <vector>
-#include <memory>
-#include <map>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/locks.hpp>
-#include "utility.h"
 #include "trace_format.h"
-#include "attack_manager.h"
 
 class attack_thread;
 
+//! front-end for performing power analysis attacks
 class attack_engine {
 public:
-    // attack_engine constructor
+    //! user-specified options to configure the attack
+    struct options {
+        std::string attack_name;
+        std::string crypto_name;
+        std::string parameters;
+        std::string result_path;
+        std::string prefix;
+        unsigned int num_threads;
+        unsigned int report_tick;
+    };
+
+    //! attack_engine constructor -- set default parameters
     attack_engine(void);
 
-    // attack_engine destructor
+    //! attack_engine destructor -- perform any last minute cleanup
     ~attack_engine(void);
 
-    // set the attack algorithm (ie. cpa, dpa)
-    void set_attack(const std::string &name);
+    //! execute the attack and write the results to results_path
+    bool run(const options &opt, trace_reader *pReader);
 
-    // set the crypto algorithm to attack (ie. aes, des)
-    void set_crypto(const std::string &name);
-
-    // set the trace reader object
-    void set_reader(trace_reader *pReader);
-
-    // set parameter list to control the attack algorithm (attack dependent)
-    void set_params(const std::string &params);
-
-    // set a prefix for each results file
-    void set_results_prefix(const std::string &prefix);
-
-    // set the maximum number of traces to process
-    void set_num_traces(size_t count);
-
-    // generate reports at the specified interval (in terms of traces)
-    void set_report_interval(size_t count);
-
-    // set the number of attack threads to spawn
-    void set_thread_count(size_t count);
-
-    // load the trace timing profile
-    bool load_trace_profile(const std::string &path);
-
-    // execute the attack and write the results to results_path
-    bool run(const std::string &results_path);
-
-    // fetch the next trace to process
+    //! fetch the next power trace for processing
     bool next_trace(int id, std::vector<long> &tm, trace &pt);
 
 protected:
-    // TODO: description
-    bool open_out(const std::string &path, std::ofstream &fout);
-
-    // TODO: description
+    //! write the differential trace report
     void write_diffs_report(const std::vector<double> &diffs, int k);
 
-    // TODO: description
+    //! write the maximum trace report
     void write_maxes_report(const std::vector<double> &maxes);
 
-    // TODO: description
+    //! write the confidence interval report
     void write_confs_report(const std::vector<double> &maxes);
 
-    // TODO: description
-    bool attack_setup(const std::string &results_path);
+    //! perform pre-attack initialization
+    bool attack_setup(const options &opt, trace_reader *pReader);
 
-    // TODO: description
+    //! perform post-attack shutdown
     void attack_shutdown(void);
 
 protected:
-    util::parameters m_params;
-    std::vector<long> m_times;
-    size_t m_tracemax;
-    size_t m_numtraces;
-    size_t m_numintervals;
-    size_t m_interval;
-    size_t m_numthreads;
-    size_t m_trace;
-    std::string m_odir, m_prefix;
-    std::ofstream m_odif;
-    std::ofstream m_omax;
-    std::ofstream m_conf;
-    std::string m_attack;
-    std::string m_crypto;
-    trace_reader *m_reader;
+    typedef std::vector<attack_thread *> thread_list;
 
-    boost::mutex m_mutex;
-    boost::thread_group m_group;
-    std::vector<attack_thread *> m_threads;
+    size_t              m_reports;  //! total number of reports to generate
+    size_t              m_interval; //! user specified reporting interval
+    size_t              m_current;  //! current available trace index
+    std::string         m_diffs;    //! path to differential trace report
+    std::string         m_maxes;    //! path to max interval report
+    std::string         m_confs;    //! path to confidence interval report
+    trace_reader       *m_reader;   //! generic trace reader
+    boost::mutex        m_mutex;    //! critical section for trace_reader
+    boost::thread_group m_group;    //! collection of worker threads
+    thread_list         m_threads;  //! collection of worker instances
 };
 
 #endif // ATTACK_ENGINE__H

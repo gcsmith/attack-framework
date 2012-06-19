@@ -21,16 +21,23 @@ link
 
 update_timing
 read_sdc lib/aes_encrypt_unit.sdc
-read_vcd top.vcd -pipe_exec "vcs -R testbench +vcs+dumpvars+top.vcd" \
-         -strip_path testbench/dut
+
+if {$env(PT_PIPE) == 0} {
+    set waveform_fmt "fsdb"
+    read_vcd -strip_path testbench/dut dump.vcd
+} else {
+    set waveform_fmt "out"
+    read_vcd top.vcd -strip_path testbench/dut -pipe_exec \
+             "vcs -R testbench +vcs+dumpvars+top.vcd $env(SYN_PLUS)"
+}
 
 ################################################################################
 # Perform power analysis
 ################################################################################
 
-set_power_analysis_options -waveform_format out                 \
-                           -waveform_output power_waveform      \
-                           -waveform_interval .01               \
+set_power_analysis_options -waveform_format $waveform_fmt   \
+                           -waveform_output power_waveform  \
+                           -waveform_interval .01           \
                            -include top
 
 check_power
