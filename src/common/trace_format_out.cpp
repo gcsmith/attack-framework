@@ -54,9 +54,10 @@ bool trace_reader_out::summary(const string &path) const
 // virtual
 bool trace_reader_out::open(const string &path, const options &opt)
 {
-    vector<string> paths;
+    close();
 
     // get the full list of .out files located in the input directory
+    vector<string> paths;
     if (!util::glob(path, ".*\\.out$", paths) || !paths.size()) {
         fprintf(stderr, "no trace found in directory: %s\n", path.c_str());
         return false;
@@ -68,8 +69,10 @@ bool trace_reader_out::open(const string &path, const options &opt)
             fprintf(stderr, "error parsing trace '%s'\n", trace_path.c_str());
             return false;
         }
+        printf("scanned trace %zu (%zu events)\r", m_traces.size(), m_events.size());
     }
 
+    printf("\n");
     return true;
 }
 
@@ -102,7 +105,7 @@ bool trace_reader_out::read_waveform_data(const string &path,
             // "done" indicates the end of the trace file
             break;
         }
-        else if (curr_line[0] == '1' && curr_line[1] == ' ') {
+        else if (curr_line[0] == '2' && curr_line[1] == ' ') {
             // power value, update the current trace entry
             if (curr_trace.size() <= 0) {
                 fprintf(stderr, "error: read power sample before event time\n");
@@ -116,8 +119,10 @@ bool trace_reader_out::read_waveform_data(const string &path,
             if (min_time && sample_time < min_time) continue;
             if (max_time && sample_time > max_time) break;
 
-            curr_trace.push_back(trace::sample(sample_time, 0.0));
-            m_events.insert(sample_time);
+            if (!curr_trace.size() || sample_time > curr_trace.back().time) {
+                curr_trace.push_back(trace::sample(sample_time, 0.0));
+                m_events.insert(sample_time);
+            }
         }
     }
     return true;
