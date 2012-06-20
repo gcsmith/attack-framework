@@ -18,7 +18,6 @@
 #include <cmath>
 #include "attack_engine.h"
 #include "attack_manager.h"
-#include "crypto.h"
 
 using namespace std;
 
@@ -94,7 +93,7 @@ bool attack_dpa<real>::setup(crypto_instance *crypto,
         !params.get("offset", m_offset) ||
         !params.get("bits", m_bits) ||
         !params.get("thresh", thresh)) {
-        fprintf(stderr, "missing parameters in attack_dpa\n");
+        fprintf(stderr, "required parameters: byte, offset, bits, thresh\n");
         return false;
     }
 
@@ -138,7 +137,7 @@ void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
 {
     for (int k = 0; k < m_guesses; ++k) {
         const unsigned int target = m_crypto->compute(m_byte, k);
-        const unsigned int weight = crypto::popcnt[target & m_mask];
+        const unsigned int weight = util::popcnt[target & m_mask];
 
         int select = 2;
         if (weight <= m_min)

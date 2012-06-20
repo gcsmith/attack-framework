@@ -36,7 +36,6 @@ int main(int argc, char *argv[])
         { CL_LONG, "report,r",     "generate report every N traces" },
         { CL_FLAG, "ciphertext",   "use ciphertext rather than plaintext" },
         { CL_LONG, "threads",      "number of worker threads to run" },
-        { CL_STR,  "prefix",       "specify prefix for result files" },
         { CL_FLAG, "list",         "print a list of attack algorithms" },
         { CL_FLAG, "help,h",       "display this usage message" },
         { CL_FLAG, "version,V",    "display the program version" },
@@ -73,13 +72,12 @@ int main(int argc, char *argv[])
     reader_opt.key         = "";
 
     attack_engine::options engine_opt;
-    engine_opt.attack_name = cl.get_str("attack",     "cpa");
-    engine_opt.crypto_name = cl.get_str("crypto",     "aes_hd_r0");
-    engine_opt.parameters  = cl.get_str("params",     "byte=0,bits=8,offset=0");
-    engine_opt.result_path = cl.get_str("output-dir", "attack_results");
-    engine_opt.prefix      = cl.get_str("prefix",     "output");
-    engine_opt.num_threads = cl.get_long("threads",   1);
-    engine_opt.report_tick = cl.get_long("report",    0);
+    engine_opt.attack_name = cl.get_str("attack", "cpa");
+    engine_opt.crypto_name = cl.get_str("crypto", "aes_hd_r0");
+    engine_opt.parameters  = cl.get_str("params", "byte=0,bits=8,offset=0");
+    engine_opt.result_path = cl.get_str("output-dir");
+    engine_opt.num_threads = cl.get_long("threads", 1);
+    engine_opt.report_tick = cl.get_long("report", 0);
 
     // allocate the reader object given the specified trace input format
     auto_ptr<trace_reader> pReader(trace_reader::create(src_fmt));

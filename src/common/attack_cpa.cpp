@@ -18,7 +18,6 @@
 #include <cmath>
 #include "attack_engine.h"
 #include "attack_manager.h"
-#include "crypto.h"
 
 using namespace std;
 using namespace util;
@@ -100,7 +99,7 @@ bool attack_cpa<real>::setup(crypto_instance *crypto, const parameters &params)
         !params.get("byte", m_byte) ||
         !params.get("offset", m_offset) ||
         !params.get("bits", m_bits)) {
-        fprintf(stderr, "missing parameters in attack_cpa\n");
+        fprintf(stderr, "required parameters: byte, offset, bits\n");
         return false;
     }
 
@@ -137,7 +136,7 @@ void attack_cpa<real>::process(const time_map &tmap, const trace &pt)
 
     for (int k = 0; k < m_guesses; ++k) {
         const int target = m_crypto->compute(m_byte, k);
-        const int weight = crypto::popcnt[target & m_mask] - m_center;
+        const int weight = util::popcnt[target & m_mask] - m_center;
         real *tw = &m_tw[k * m_nevents], fw = (real)weight;
 
         if (weight != 0) {

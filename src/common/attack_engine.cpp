@@ -60,15 +60,19 @@ bool attack_engine::run(const options &opt, trace_reader *pReader)
 // -----------------------------------------------------------------------------
 bool attack_engine::attack_setup(const options &opt, trace_reader *pReader)
 {
-    const string results = opt.result_path.length() ? opt.result_path : ".";
-    const string prefix = opt.prefix.length() ? opt.prefix + "_" : "";
+    // if no results directory is specified, create one using the timestamp
+    m_results = opt.result_path;
+    if (m_results.length() == 0) {
+        ostringstream oss;
+        oss << util::timestamp()
+            << "_" << opt.attack_name
+            << "_" << opt.crypto_name
+            << "_" << pReader->trace_count();
+        m_results = oss.str();
+    }
 
-    if (!util::valid_output_directory(results))
+    if (!util::valid_output_directory(m_results))
         return false;
-
-    m_diffs = util::concat_name(results, prefix + "differentials.csv");
-    m_confs = util::concat_name(results, prefix + "confidence_interval.csv");
-    m_maxes = util::concat_name(results, prefix + "maxes.csv");
 
     const size_t num_traces = pReader->trace_count();
     const size_t num_threads = (opt.num_threads > 0) ? opt.num_threads : 1;
@@ -137,6 +141,9 @@ void attack_engine::attack_shutdown(void)
     write_maxes_report(maxes, num_guesses);
     write_confs_report(maxes, num_guesses);
 
+    // allow the attack to write out additional reports if necessary
+    first_thread->attack()->write_results(m_results);
+
     // finally, destroy the threads themselves
     foreach (attack_thread *thread, m_threads) delete thread;
     m_threads.clear();
@@ -190,11 +197,14 @@ void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
     }
 
     // attempt to open the differential report file for writing
-    ofstream report(m_diffs.c_str());
+    const string path = util::concat_name(m_results, "differentials.csv");
+    ofstream report(path.c_str());
+
     if (!report.is_open()) {
-        fprintf(stderr, "failed to open '%s' for writing\n", m_diffs.c_str());
+        fprintf(stderr, "failed to open '%s' for writing\n", path.c_str());
         return;
     }
+    printf("writing %s ...\n", path.c_str());
 
     int best_k = -1, at_sample = -1;
     double max_diff = 0.0;
@@ -221,17 +231,18 @@ void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
 // -----------------------------------------------------------------------------
 void attack_engine::write_maxes_report(const vector<double> &maxes, int nk)
 {
-    if (m_reports == 1 || maxes.size() != nk * m_reports) {
-        fprintf(stderr, "skipping interval maximum report...\n");
+    if (m_reports == 1 || maxes.size() != nk * m_reports)
         return;
-    }
 
     // attempt to open the confidence interval report file for writing
-    ofstream report(m_maxes.c_str());
+    const string path = util::concat_name(m_results, "interval_maxes.csv");
+    ofstream report(path.c_str());
+
     if (!report.is_open()) {
-        fprintf(stderr, "failed to open '%s' for writing\n", m_maxes.c_str());
+        fprintf(stderr, "failed to open '%s' for writing\n", path.c_str());
         return;
     }
+    printf("writing %s ...\n", path.c_str());
 
     for (size_t i = 0; i < m_reports; ++i) {
         const double *m = &maxes[i * nk];
@@ -244,17 +255,18 @@ void attack_engine::write_maxes_report(const vector<double> &maxes, int nk)
 // -----------------------------------------------------------------------------
 void attack_engine::write_confs_report(const vector<double> &maxes, int nk)
 {
-    if (m_reports == 1 || maxes.size() != nk * m_reports) {
-        fprintf(stderr, "skipping confidence interval report...\n");
+    if (m_reports == 1 || maxes.size() != nk * m_reports)
         return;
-    }
 
     // attempt to open the confidence interval report file for writing
-    ofstream report(m_confs.c_str());
+    const string path = util::concat_name(m_results, "confidence_interval.csv");
+    ofstream report(path.c_str());
+
     if (!report.is_open()) {
-        fprintf(stderr, "failed to open '%s' for writing\n", m_confs.c_str());
+        fprintf(stderr, "failed to open '%s' for writing\n", path.c_str());
         return;
     }
+    printf("writing %s ...\n", path.c_str());
 
     for (size_t i = 0; i < m_reports; ++i) {
         // compute the confidence ratio for each key guess in this interval

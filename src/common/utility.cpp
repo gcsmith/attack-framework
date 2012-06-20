@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <ctime>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
@@ -27,6 +28,15 @@ using namespace std;
 namespace fs = boost::filesystem;
 
 namespace util {
+
+// -----------------------------------------------------------------------------
+string timestamp(void)
+{
+    time_t t = time(NULL);
+    char buffer[128];
+    strftime(buffer, 128, "%Y_%b_%d_%H_%M_%S", localtime(&t));
+    return buffer;
+}
 
 // -----------------------------------------------------------------------------
 bool valid_input_directory(const string &path)
@@ -113,7 +123,8 @@ bool directory_search(const string &path, const string &pattern)
 bool atob(const string &str, uint8_t *bytes, size_t count)
 {
     if ((count * 2) != str.length()) {
-        fprintf(stderr, "incorrect hex string format %s\n", str.c_str());
+        fprintf(stderr, "incorrect hex format %s (expect %d digits, got %d)\n",
+                str.c_str(), (int)count * 2, (int)str.length());
         return false;
     }
 

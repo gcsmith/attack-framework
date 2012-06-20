@@ -21,7 +21,6 @@
 #include "cmdline.h"
 #include "trace_format.h"
 #include "attack_manager.h"
-#include "crypto.h"
 
 using namespace std;
 
@@ -97,7 +96,7 @@ int main(int argc, char *argv[])
         int weight = 0;
         for (size_t b = 0; b < text_size; ++b) {
             const int k = crypt_inst->extract_estimate(b);
-            weight += crypto::popcnt[crypt_inst->compute(b, k)];
+            weight += util::popcnt[crypt_inst->compute(b, k)];
         }
 
         pt.clear();

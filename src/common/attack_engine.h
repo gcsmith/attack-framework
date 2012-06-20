@@ -33,7 +33,6 @@ public:
         std::string crypto_name;
         std::string parameters;
         std::string result_path;
-        std::string prefix;
         unsigned int num_threads;
         unsigned int report_tick;
     };
@@ -72,9 +71,7 @@ protected:
     size_t              m_reports;  //! total number of reports to generate
     size_t              m_interval; //! user specified reporting interval
     size_t              m_current;  //! current available trace index
-    std::string         m_diffs;    //! path to differential trace report
-    std::string         m_maxes;    //! path to max interval report
-    std::string         m_confs;    //! path to confidence interval report
+    std::string         m_results;  //! output results directory
     trace_reader       *m_reader;   //! generic trace reader
     boost::mutex        m_mutex;    //! critical section for trace_reader
     boost::thread_group m_group;    //! collection of worker threads

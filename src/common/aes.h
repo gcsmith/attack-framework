@@ -18,7 +18,27 @@
 #define AES__H
 
 #include <stdint.h>
-#include <vector>
+
+// multiplication by constants 1-F in GF(2^8)
+#define GF_1(x) (x)
+#define GF_2(x) ((x & 0x80) ? ((x << 1) ^ 0x1B) : (x << 1))
+#define GF_3(x) (GF_2(x) ^ GF_1(x))
+#define GF_4(x) (GF_2(GF_2(x)))
+#define GF_5(x) (GF_4(x) ^ GF_1(x))
+#define GF_6(x) (GF_4(x) ^ GF_2(x))
+#define GF_7(x) (GF_4(x) ^ GF_2(x) ^ GF_1(x))
+#define GF_8(x) (GF_2(GF_2(GF_2(x))))
+#define GF_9(x) (GF_8(x) ^ GF_1(x))
+#define GF_A(x) (GF_8(x) ^ GF_2(x))
+#define GF_B(x) (GF_8(x) ^ GF_2(x) ^ GF_1(x))
+#define GF_C(x) (GF_8(x) ^ GF_4(x))
+#define GF_D(x) (GF_8(x) ^ GF_4(x) ^ GF_1(x))
+#define GF_E(x) (GF_8(x) ^ GF_4(x) ^ GF_2(x))
+#define GF_F(x) (GF_8(x) ^ GF_4(x) ^ GF_2(x) ^ GF_1(x))
+
+#define X_(x0, x1, x2, x3, x4, x5, x6, x7, x8, x9, xA, xB, xC, xD, xE, xF)  \
+    0x##x0, 0x##x1, 0x##x2, 0x##x3, 0x##x4, 0x##x5, 0x##x6, 0x##x7,         \
+    0x##x8, 0x##x9, 0x##xA, 0x##xB, 0x##xC, 0x##xD, 0x##xE, 0x##xF
 
 namespace aes {
 

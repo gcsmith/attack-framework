@@ -19,7 +19,6 @@
 #include <cmath>
 #include "attack_engine.h"
 #include "attack_manager.h"
-#include "crypto.h"
 
 using namespace std;
 using namespace util;
@@ -27,6 +26,8 @@ using namespace util;
 // -----------------------------------------------------------------------------
 class attack_pscc: public attack_instance {
 public:
+    typedef float real;
+
     attack_pscc();
     ~attack_pscc();
 
@@ -41,18 +42,19 @@ public:
     virtual void get_maxes(vector<double> &maxes);
 
 protected:
-    typedef float real;
-    size_t m_traces;        // number of traces processed
-    size_t m_nevents;       // number of unique trace events
-    size_t m_nreports;      // number of reports to compute
-    int m_bytes;            // number of bytes to correlate
-    int m_offset;           // offset of first byte to correlate
-    vector<real> m_p1;      // sum of traces at each event
-    vector<real> m_p2;      // sum of squared traces at each event
-    vector<real> m_pw;      // sum of weighted traces at each event
-    real m_w1;              // sum of weights
-    real m_w2;              // sum of squared weights
-    crypto_instance *m_crypto;
+    void compute_differentials(vector<double> &diffs);
+
+    size_t           m_traces;   //!< number of traces processed
+    size_t           m_nevents;  //!< number of unique trace events
+    size_t           m_nreports; //!< number of reports to compute
+    int              m_bytes;    //!< number of bytes to correlate
+    int              m_offset;   //!< offset of first byte to correlate
+    vector<real>     m_p1;       //!< sum of traces at each event
+    vector<real>     m_p2;       //!< sum of squared traces at each event
+    vector<real>     m_pw;       //!< sum of weighted traces at each event
+    real             m_w1;       //!< sum of weights
+    real             m_w2;       //!< sum of squared weights
+    crypto_instance *m_crypto;   //!< crypto instance
 };
 
 // -----------------------------------------------------------------------------
@@ -68,18 +70,21 @@ attack_pscc::~attack_pscc()
 // -----------------------------------------------------------------------------
 bool attack_pscc::setup(crypto_instance *crypto, const parameters &params)
 {
+    const int key_length = crypto->key_bits() >> 3;
+    string key_string;
+
     if (!params.get("num_events", m_nevents) ||
         !params.get("num_reports", m_nreports) ||
         !params.get("bytes", m_bytes) ||
-        !params.get("offset", m_offset)) {
-        fprintf(stderr, "missing parameters in attack_cpa\n");
+        !params.get("offset", m_offset) ||
+        !params.get("key", key_string)) {
+        fprintf(stderr, "required parameters: key, bytes, offset\n");
         return false;
     }
 
-    int key_bytes = crypto->key_bits() >> 3;
-    vector<uint8_t> key(key_bytes);
 
-    if (!util::atob(params["key"], &key[0], key_bytes))
+    vector<uint8_t> key(key_length);
+    if (!util::atob(key_string, &key[0], key_length))
         return false;
 
     m_crypto = crypto;
@@ -102,7 +107,7 @@ void attack_pscc::process(const time_map &tmap, const trace &pt)
     real weight = 0;
     for (int i = m_offset; i < (m_offset + m_bytes); ++i) {
         const int k = m_crypto->extract_estimate(i);
-        weight += crypto::popcnt[m_crypto->compute(i, k)];
+        weight += util::popcnt[m_crypto->compute(i, k)];
     }
 
     m_w1 += weight;
@@ -140,7 +145,7 @@ void attack_pscc::coalesce(attack_instance *inst)
 }
 
 // -----------------------------------------------------------------------------
-void attack_pscc::get_diffs(vector<double> &diffs)
+void attack_pscc::compute_differentials(vector<double> &diffs)
 {
     const real n = (real)m_traces;
     const real dw = sqrt(n * m_w2 - m_w1 * m_w1);
@@ -155,6 +160,12 @@ void attack_pscc::get_diffs(vector<double> &diffs)
 }
 
 // -----------------------------------------------------------------------------
+void attack_pscc::get_diffs(vector<double> &diffs)
+{
+    compute_differentials(diffs);
+}
+
+// -----------------------------------------------------------------------------
 void attack_pscc::get_maxes(vector<double> &maxes)
 {
 }
@@ -162,18 +173,35 @@ void attack_pscc::get_maxes(vector<double> &maxes)
 // -----------------------------------------------------------------------------
 void attack_pscc::write_results(const string &path)
 {
-    // XXX: why did I write this?
-    ofstream fp(util::concat_name(path, "pscc_sanity.txt").c_str());
-    for (size_t s = 0; s < m_nevents; ++s)
-        fp << m_p1[s] << " " << m_p2[s] << " " << m_pw[s] << " " << m_w1
-           << " " << m_w2 << " " << m_traces << " " << m_nevents << endl;
+    const string s_path = util::concat_name(path, "pscc_sanity.txt");
+    const string r_path = util::concat_name(path, "pscc_results.txt");
 
-#if 0
+    // dump the contents of attack_pscc
+    ofstream fp_s(s_path.c_str());
+    if (!fp_s.is_open()) {
+        fprintf(stderr, "failed to open '%s' for writing\n", s_path.c_str());
+        return;
+    }
+    printf("writing %s ...\n", s_path.c_str());
+
+    for (size_t s = 0; s < m_nevents; ++s) {
+        fp_s << m_p1[s] << " " << m_p2[s] << " " << m_pw[s] << " " << m_w1
+             << " " << m_w2 << " " << m_traces << " " << m_nevents << endl;
+    }
+
     // write correlation coefficients for each event
-    ofstream fout(util::concat_name(path, "pscc_results.csv").c_str());
+    ofstream fp_r(r_path.c_str());
+    if (!fp_r.is_open()) {
+        fprintf(stderr, "failed to open '%s' for writing\n", r_path.c_str());
+        return;
+    }
+    printf("writing %s ...\n", r_path.c_str());
+
+    vector<double> diffs;
+    compute_differentials(diffs);
+
     for (size_t s = 0; s < m_nevents; ++s)
-        fout << s << "," << scientific << diffs[s] << endl;
-#endif
+        fp_r << s << "," << scientific << diffs[s] << endl;
 }
 
 // -----------------------------------------------------------------------------
@@ -182,5 +210,5 @@ bool attack_pscc::cleanup()
     return true;
 }
 
-register_attack(pscc,  attack_pscc);
+register_attack(pscc, attack_pscc);
 

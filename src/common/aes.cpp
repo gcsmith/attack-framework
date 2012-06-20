@@ -16,7 +16,6 @@
 
 #include <cstdio>
 #include "aes.h"
-#include "crypto.h"
 #include "utility.h"
 
 namespace aes {

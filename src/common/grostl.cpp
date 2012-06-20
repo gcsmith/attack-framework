@@ -18,7 +18,6 @@
 #include <cstdio>
 #include <cstring>
 #include "aes.h"
-#include "crypto.h"
 #include "grostl.h"
 #include "utility.h"
 
