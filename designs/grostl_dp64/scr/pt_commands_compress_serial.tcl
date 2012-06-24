@@ -11,7 +11,7 @@ set power_analysis_mode     time_based
 
 set search_path     "lib ."
 set link_library    "* core_typ.db"
-read_verilog        grostl_hmac_serial.vg
+read_verilog        grostl_compress_serial.vg
 current_design      grostl_compress_serial
 link
 
@@ -21,16 +21,23 @@ link
 
 update_timing
 read_sdc lib/grostl_unit.sdc
-read_vcd top.vcd -pipe_exec "vcs -R testbench +vcs+dumpvars+top.vcd" \
-         -strip_path testbench/dut
+
+if {$env(PT_PIPE) == 0} {
+    set waveform_path "power_waveform_old"
+    read_vcd -strip_path testbench/dut dump.vcd
+} else {
+    set waveform_path "power_waveform"
+    read_vcd top.vcd -strip_path testbench/dut -pipe_exec \
+             "vcs -R testbench +vcs+dumpvars+top.vcd $env(SYN_PLUS)"
+}
 
 ################################################################################
 # Perform power analysis
 ################################################################################
 
-set_power_analysis_options -waveform_format out                 \
-                           -waveform_output power_waveform      \
-                           -waveform_interval .01               \
+set_power_analysis_options -waveform_format fsdb            \
+                           -waveform_output $waveform_path  \
+                           -waveform_interval .01           \
                            -include top
 
 check_power

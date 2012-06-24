@@ -24,13 +24,14 @@
 class trace {
 public:
     typedef std::set<uint32_t> event_set;
+    typedef float real;
 
     struct sample {
         sample(void) { }
-        sample(uint32_t _time, float _power) : time(_time), power(_power) { }
+        sample(uint32_t _time, real _power) : time(_time), power(_power) { }
 
         uint32_t time;
-        float power;
+        real power;
     };
 
     //! create an empty trace

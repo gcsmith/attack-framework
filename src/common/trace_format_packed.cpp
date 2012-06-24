@@ -143,7 +143,7 @@ bool trace_reader_packed::read(trace &pt)
     // read in the sample data
     trace::sample data;
     foreach (uint32_t event_time, m_times) {
-        m_input.read((char *)&data.power, sizeof(float));
+        m_input.read((char *)&data.power, sizeof(trace::real));
 
         if (m_tmin && data.time < m_tmin) continue;
         if (m_tmax && data.time > m_tmax) continue; // NOTE: can NOT break!
@@ -218,7 +218,7 @@ bool trace_writer_packed::write(const trace &pt)
     m_output.write((const char *)&pt.text()[0], sizeof(uint8_t) * m_textlen);
 
     foreach (const trace::sample &sample, pt.samples())
-        m_output.write((const char *)&sample.power, sizeof(float));
+        m_output.write((const char *)&sample.power, sizeof(trace::real));
 
     ++m_ntraces;
     return true;

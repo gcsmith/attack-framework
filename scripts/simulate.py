@@ -40,8 +40,22 @@ class LocalWorker(AbstractWorkerThread):
         print self.name, 'spawning', self.run_cmd, 'in', self.work_path
         child = subprocess.Popen(self.run_cmd, cwd=self.work_path,
                                  stdout=fp_stdout, stderr=fp_stderr)
+        self.set_status('simulating')
         child.wait()
+
+        os.rename(os.path.join(self.work_path, 'simulation.txt'),
+                  'simulation_' + str(self.index) + '.txt')
+        os.rename(os.path.join(self.work_path, 'power_waveform.out'),
+                  'power_waveform_' + str(self.index) + '.out')
+
+        if self.bzip2:
+            self.set_status('compressing')
+            with tarfile.open('simulation_results_' + str(self.index) + '.tar.bz2', 'w:bz2') as tar:
+                tar.add('simulation_' + str(self.index) + '.txt')
+                tar.add('power_waveform_' + str(self.index) + '.out')
+
         print self.name, 'completed'
+        self.set_status('done')
         self.sema.release()
 
 # ------------------------------------------------------------------------------
@@ -115,7 +129,9 @@ def parse_command_line():
                    help='specify the top level design directory')
     p.add_argument('-w', '--work', metavar='arg', default='.',
                    help='specify the working directory for simulation')
-    p.add_argument('-i', '--inst', metavar='arg', type=int, default=1,
+    p.add_argument('-i', '--index', metavar='arg', type=int, default=0,
+                   help='starting thread index')
+    p.add_argument('-n', '--inst', metavar='arg', type=int, default=1,
                    help='number of simulator instances to run')
     p.add_argument('-d', '--dop', metavar='arg', type=int, default=0,
                    help='specify the maximum degree of parallelism')
@@ -141,6 +157,9 @@ def parse_command_line():
 
     if not os.path.isdir(args.proj):
         print 'project path is not a directory:', args.proj
+        sys.exit(1)
+    if args.index < 0:
+        print 'must specify non-zero starting index'
         sys.exit(1)
     if args.inst < 1:
         print 'must specify at least one instance to run'
@@ -175,7 +194,7 @@ if __name__ == '__main__':
     sema = threading.BoundedSemaphore(value=max_dop)
 
     threads = []
-    for i in range(args.inst):
+    for i in range(args.index, args.index + args.inst):
         # create the temporary working directory, and link the specified design
         work_path = 'work_' + str(i)
         work_abs  = os.path.abspath(work_path)

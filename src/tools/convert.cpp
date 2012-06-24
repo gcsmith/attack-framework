@@ -25,7 +25,7 @@
 using namespace std;
 
 // -----------------------------------------------------------------------------
-int convert_traces(trace_reader *pReader, trace_writer *pWriter)
+bool convert_traces(trace_reader *pReader, trace_writer *pWriter)
 {
     // determine the total number of traces to convert
     size_t trace_count = pReader->trace_count();
@@ -35,22 +35,20 @@ int convert_traces(trace_reader *pReader, trace_writer *pWriter)
     for (size_t i = 0; i < trace_count; ++i) {
         if (!pReader->read(pt)) {
             fprintf(stderr, "failed to read trace %zu\n", i + 1);
-            return 1;
+            return false;
         }
         if (!pWriter->write(pt)) {
             fprintf(stderr, "failed to write trace %zu\n", i + 1);
-            return 1;
+            return false;
         }
 
         const string text(util::btoa(pt.text()));
         printf("converted %s [%zu/%zu]\r", text.c_str(), i + 1, trace_count);
     }
 
-    printf("\nsuccessfully converted traces...\n");
-
     pReader->close();
     pWriter->close();
-    return 0;
+    true;
 }
 
 // -----------------------------------------------------------------------------
@@ -118,6 +116,10 @@ int main(int argc, char *argv[])
     if (!wr.get() || !wr->open(output_path, opt.key, rd->events()))
         return 1;
 
-    return convert_traces(rd.get(), wr.get());
+    if (!convert_traces(rd.get(), wr.get()))
+        return 1;
+
+    printf("successfully generated %s\n", input_path.c_str());
+    return 0;
 }
 

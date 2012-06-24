@@ -29,25 +29,27 @@ public:
     bool open(const string &path, const options &opt);
     void close();
     bool read(trace &pt);
-    size_t trace_count(void) const             { return m_traces.size(); }
+    size_t trace_count(void) const             { return m_traces; }
     const trace::event_set &events(void) const { return m_events; }
 
 protected:
     struct record {
         record(long long _event, const string &_text)
         : event(_event), text(_text) { }
-        uint64_t event; // sample event index
-        string   text;  // plaintext or ciphertext
+        uint64_t event; //!< sample event index
+        string   text;  //!< plaintext or ciphertext
     };
 
     bool read_timestamps(const string &path, bool ct);
-    bool read_waveforms(const string &path, size_t base,
-                        unsigned long min_time, unsigned long max_time);
+    bool read_events(const string &path, size_t base);
+    bool read_waveforms(const string &path, size_t base);
 
-    trace::event_set m_events;  // set of unique power event timestamps
-    vector<record>   m_records; // simulation base event and text
-    vector<trace>    m_traces;  // power waveforms
-    unsigned long    m_current; // current trace index for ::read()
+    options          m_opt;
+    size_t           m_current; //!< current trace index for ::read()
+    size_t           m_traces;  //!< maximum number of traces to process
+    trace::event_set m_events;  //!< set of unique power event timestamps
+    fstream          m_wavfile; //!< temporary waveform input file
+    vector<record>   m_records; //!< simulation base event and text
 };
 
 // -----------------------------------------------------------------------------
@@ -62,32 +64,50 @@ bool trace_reader_simv::summary(const string &path) const
 // virtual
 bool trace_reader_simv::open(const string &path, const options &opt)
 {
+    // the first pass will build the set of unique event indices and write a
+    // temporary file containing one trace waveform per line. the second pass
+    // will consume this temporary file and generate each complete trace object
+    m_wavfile.open(".trace_reader_simv_temp_waveform", ios::out);
+    if (!m_wavfile.is_open()) {
+        fprintf(stderr, "failed to open temporary waveform file for writing\n");
+        return false;
+    }
+
     // process each pair of simulation(.*).txt and power_waveform(.*).out
     vector<string> globbed_paths;
     if (!util::glob(path, "simulation.*\\.txt$", globbed_paths))
         return false;
+
+    m_opt = opt;
+    m_current = m_traces = 0;
 
     foreach (const string &curr_path, globbed_paths) {
         // determine the waveform filename from the timestamp filename
         const string suffix = util::path_stem(curr_path).substr(10);
         const string waveform = "power_waveform" + suffix + ".out";
         const string wav_path = util::concat_name(path, waveform);
-        const size_t record_base = m_records.size();
+        const size_t rec_base = m_records.size();
 
         // read in the event timestamps, then read and adjust the waveforms
         if (!read_timestamps(curr_path, opt.ciphertext) ||
-            !read_waveforms(wav_path, record_base, opt.min_time, opt.max_time))
+            !read_waveforms(wav_path, rec_base))
             return false;
 
         printf("scanned %zu traces from %s... \t%zu unique indices\n",
-               m_records.size()-record_base, wav_path.c_str(), m_events.size());
+               m_records.size() - rec_base, wav_path.c_str(), m_events.size());
 
         // only process the specified number of traces
-        if (opt.num_traces && m_traces.size() >= opt.num_traces)
+        if (opt.num_traces && m_traces >= opt.num_traces)
             break;
     }
 
-    m_current = 0;
+    // close the temporary trace file, then re-open it for reading
+    m_wavfile.close();
+    m_wavfile.open(".trace_reader_simv_temp_waveform", ios::in);
+    if (!m_wavfile.is_open()) {
+        fprintf(stderr, "failed to open temporary waveform file for reading\n");
+        return false;
+    }
     return true;
 }
 
@@ -102,6 +122,8 @@ bool trace_reader_simv::read_timestamps(const string &path, bool ct)
 
     // read in the record for each simulated operation
     string curr_line;
+    const int id = ct ? 2 : 1;
+
     while (getline(sim_in, curr_line)) {
         const vector<string> tok(util::split(curr_line));
         if (tok.size() < 3) {
@@ -110,8 +132,7 @@ bool trace_reader_simv::read_timestamps(const string &path, bool ct)
         }
 
         // store the event time along with its corresponding plain/ciphertext
-        const string &text = ct ? tok[2] : tok[1];
-        m_records.push_back(record(strtoll(tok[0].c_str(), NULL, 10), text));
+        m_records.push_back(record(strtoll(tok[0].c_str(), NULL, 10), tok[id]));
     }
 
     if (m_records.size() <= 1) {
@@ -123,9 +144,7 @@ bool trace_reader_simv::read_timestamps(const string &path, bool ct)
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_simv::read_waveforms(const string &path, size_t base,
-                                       unsigned long min_time,
-                                       unsigned long max_time)
+bool trace_reader_simv::read_waveforms(const string &path, size_t base)
 {
     ifstream wav_in(path.c_str());
     if (!wav_in.is_open()) {
@@ -134,7 +153,6 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base,
     }
 
     size_t record_index = base;
-    bool read_timestamp = false;
     string curr_line;
     trace curr_trace;
 
@@ -156,8 +174,8 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base,
             continue;
         }
 
-        // if the line isn't a comment or directive, assume it's data
-        size_t split_pos = curr_line.find_first_of(' ');
+        // if the line isn't a comment or part of the header, assume it's data
+        const size_t split_pos = curr_line.find_first_of(' ');
         if (string::npos == split_pos) {
             // if the line contains a single value, it's an event timestamp
             uint64_t event_time = strtoull(curr_line.c_str(), NULL, 10);
@@ -165,42 +183,41 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base,
             if (event_time < m_records[record_index].event) {
                 // don't process events occurring before the current timestamp
                 printf("skipping event %llu\n", (long long unsigned)event_time);
-                read_timestamp = false;
                 continue;
             }
             else if (event_time >= m_records[record_index + 1].event) {
-                // if we've reached the next simulation, select its timestamp
-                printf("scanned trace %lu\r", record_index);
-                if (++record_index >= (m_records.size() - 1))
-                    break;
-
-                m_traces.push_back(curr_trace);
+                // dump the current trace data and select the next timestamp
+                foreach (const trace::sample &sample, curr_trace.samples())
+                    m_wavfile << sample.time << ' ' << sample.power << ' ';
+                m_wavfile << endl;
                 curr_trace.clear();
+                ++m_traces;
+
+                printf("scanned trace %lu\r", record_index);
+                if (m_opt.num_traces && m_traces >= m_opt.num_traces ||
+                    ++record_index >= (m_records.size() - 1))
+                    break;
             }
 
             // compute the sample time as the offset from the current timestamp
             event_time -= m_records[record_index].event;
 
-            if ((min_time && event_time < min_time) ||
-                (max_time && event_time > max_time)) { // NOTE: can NOT break!
-                read_timestamp = false;
+            if ((m_opt.min_time && event_time < m_opt.min_time) ||
+                (m_opt.max_time && event_time > m_opt.max_time))
                 continue;
+
+            if (!curr_trace.size() || curr_trace.back().time != event_time) {
+                curr_trace.push_back(trace::sample(event_time, 0.0f));
+                m_events.insert(event_time);
             }
-
-            curr_trace.push_back(trace::sample(event_time, 0.0f));
-
-            // maintain a set of the unique event timestamps
-            m_events.insert(event_time);
-            read_timestamp = true;
         }
-        else if (curr_line[0] == '1' && read_timestamp) {
+        else if (curr_line[0] == '1' && curr_trace.size()) {
             // only write out data for the top level events (pp_root)
             const string pow_str = util::trim_copy(curr_line.substr(split_pos));
             curr_trace.back().power += strtod(pow_str.c_str(), NULL);
         }
     }
 
-    assert(m_records.size() == m_traces.size());
     return true;
 }
 
@@ -208,6 +225,7 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base,
 // virtual
 void trace_reader_simv::close()
 {
+    m_wavfile.close();
     m_current = 0;
 }
 
@@ -215,14 +233,25 @@ void trace_reader_simv::close()
 // virtual
 bool trace_reader_simv::read(trace &pt)
 {
-    if (m_current >= m_traces.size())
+    if (m_current >= m_traces)
         return false;
 
     // initialize the trace object with the message text from simulation.txt
     pt.clear();
     pt.set_text(util::atob(m_records[m_current].text));
 
-    return trace_reader::copy_trace(m_traces[m_current++], pt, m_events);
+    string line;
+    getline(m_wavfile, line);
+
+    trace curr_trace;
+    trace::sample sample;
+    istringstream iss(line);
+
+    while (iss >> sample.time >> sample.power)
+        curr_trace.push_back(sample);
+
+    ++m_current;
+    return trace_reader::copy_trace(curr_trace, pt, m_events);
 }
 
 register_trace_reader(simv, trace_reader_simv);

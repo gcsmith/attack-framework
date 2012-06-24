@@ -6,7 +6,7 @@ set power_enable_analysis   true
 set power_analysis_mode     time_based
 
 ################################################################################
-# Link design, load constraints and activity file
+# Set library search path, read in the netlist, and link the design
 ################################################################################
 
 set search_path     "lib ."
@@ -23,10 +23,10 @@ update_timing
 read_sdc lib/aes_encrypt_unit.sdc
 
 if {$env(PT_PIPE) == 0} {
-    set waveform_fmt "fsdb"
+    set waveform_path "power_waveform_old"
     read_vcd -strip_path testbench/dut dump.vcd
 } else {
-    set waveform_fmt "out"
+    set waveform_path "power_waveform"
     read_vcd top.vcd -strip_path testbench/dut -pipe_exec \
              "vcs -R testbench +vcs+dumpvars+top.vcd $env(SYN_PLUS)"
 }
@@ -35,8 +35,8 @@ if {$env(PT_PIPE) == 0} {
 # Perform power analysis
 ################################################################################
 
-set_power_analysis_options -waveform_format $waveform_fmt   \
-                           -waveform_output power_waveform  \
+set_power_analysis_options -waveform_format fsdb            \
+                           -waveform_output $waveform_path  \
                            -waveform_interval .01           \
                            -include top
 

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-`timescale 1ns/1ns
+`timescale 1ns/10ps
 
 module testbench;
   logic       clk = 0, rst = 0, valid = 0;

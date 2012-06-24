@@ -45,11 +45,11 @@ protected:
     size_t m_nreports;
     unsigned int m_mask, m_byte, m_offset, m_bits;
     unsigned int m_min, m_max;
-    vector<size_t> m_binsz; // current size of each bin
-    vector<size_t> m_group; // bin sizes for each report interval
-    vector<real> m_dtemp;
-    vector<real> m_diffs;   // positive and negative differentials
-    vector<real> m_maxes;
+    vector<size_t> m_binsz; //!< current size of each bin
+    vector<size_t> m_group; //!< bin sizes for each report interval
+    vector<real> m_dtemp;   //!< temporary differential trace
+    vector<real> m_diffs;   //!< positive and negative differentials
+    vector<real> m_maxes;   //!< interval maxes for each report interval
     crypto_instance *m_crypto;
     int m_guesses;
 };

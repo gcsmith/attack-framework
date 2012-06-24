@@ -23,10 +23,10 @@ update_timing
 read_sdc lib/rijndael_sbox.sdc
 
 if {$env(PT_PIPE) == 0} {
-    set waveform_fmt "fsdb"
+    set waveform_path "power_waveform_old"
     read_vcd -strip_path testbench/dut dump.vcd
 } else {
-    set waveform_fmt "out"
+    set waveform_path "power_waveform"
     read_vcd top.vcd -strip_path testbench/dut -pipe_exec \
              "vcs -R testbench +vcs+dumpvars+top.vcd $env(SYN_PLUS)"
 }
@@ -35,8 +35,8 @@ if {$env(PT_PIPE) == 0} {
 # Perform power analysis
 ################################################################################
 
-set_power_analysis_options -waveform_format $waveform_fmt   \
-                           -waveform_output power_waveform  \
+set_power_analysis_options -waveform_format fsdb            \
+                           -waveform_output $waveform_path  \
                            -waveform_interval .01           \
                            -include top
 

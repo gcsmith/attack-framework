@@ -46,22 +46,25 @@ dump.vpd: scr/simv_commands_$(UNIT).tcl simv
 dump.vcd: dump.vpd
 	vpd2vcd +includemda $< $@ | tee -a $(SLOG)
 
-power_waveform.fsdb: scr/pt_commands_$(UNIT).tcl dump.vcd
+power_waveform_old.fsdb: scr/pt_commands_$(UNIT).tcl dump.vcd
 	PT_PIPE=0 pt_shell $(SYN_ARCH) -f $< | tee -a $(SLOG)
 
-power_waveform_orig.out: power_waveform.fsdb
+power_waveform_old.out: power_waveform.fsdb
 	fsdb2ns -fmt out -o $@ $<
 
-.PHONY: power_orig
-power_orig: power_waveform_orig.out
+.PHONY: power_old
+power_old: power_waveform_old.out
 
 ################################################################################
 # combined rule for piping VCS simulation data to PrimeTime
 ################################################################################
 
-power_waveform.out: scr/pt_commands_$(UNIT).tcl $(DESIGN_HDL)
+power_waveform.fsdb: scr/pt_commands_$(UNIT).tcl $(DESIGN_HDL)
 	vlogan -sverilog $(DESIGN_HDL) | tee -a $(CLOG)
 	PT_PIPE=1 pt_shell $(SYN_ARCH) -f $< | tee -a $(SLOG)
+
+power_waveform.out: power_waveform.fsdb
+	fsdb2ns -fmt out -o $@ $<
 
 simulation_results.tar.bz2: power_waveform.out
 	tar -cvjf $@ $^ simulation.txt

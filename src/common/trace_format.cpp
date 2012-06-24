@@ -56,10 +56,10 @@ string trace_reader::guess_format(const string &path)
     }
     else {
         // input path is a directory, so determine type by the files within
-        if (util::directory_search(path, ".*\\.out$"))
-            return "out";
-        else if (util::directory_search(path, "simulation.*\\.txt$"))
+        if (util::directory_search(path, "simulation.*\\.txt$"))
             return "simv";
+        else if (util::directory_search(path, ".*\\.out$"))
+            return "out";
         else if (util::directory_search(path, ".*\\.bin$"))
             return "v1";
         else if (util::directory_search(path, ".*\\.csv$"))
@@ -95,13 +95,13 @@ trace_reader *trace_reader::create(const string &format)
 bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
                               const trace::event_set &events)
 {
-    float last_power = 0.0f;
+    trace::real last_power = 0.0f;
     trace::event_set::const_iterator curr_event = events.begin();
 
     foreach (const trace::sample sample, pt_in.samples()) {
         // primetime may break the power sample into multiple events
         if (pt_out.size() && pt_out.back().time == sample.time) {
-#if TRACE_SUM_DUPLICATES
+#if 1
             pt_out.back().power += sample.power;
 #endif
             continue;
@@ -109,12 +109,12 @@ bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
 
         // sample and hold by copying the previous power into each empty sample
         while ((curr_event != events.end()) && (*curr_event < sample.time))
-            pt_out.push_back(trace::sample(*curr_event++, last_power));
+            pt_out.push_back(trace::sample(*curr_event++, sample.power));
 
         assert(sample.time == *curr_event);
-        pt_out.push_back(trace::sample(*curr_event++, sample.power));
+        pt_out.push_back(trace::sample(*curr_event++, last_power));
 
-#if TRACE_SAMPLE_AND_HOLD
+#if 1
         // if this is disabled, last_power will always be 0 (ie. empty samples)
         last_power = sample.power;
 #endif

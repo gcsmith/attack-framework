@@ -27,9 +27,9 @@
 struct trace_reader {
 
     struct options {
-        unsigned long min_time;
-        unsigned long max_time;
-        unsigned long num_traces;
+        size_t min_time;
+        size_t max_time;
+        size_t num_traces;
         bool ciphertext;
         std::string key;
     };
