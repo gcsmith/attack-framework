@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     if (!convert_traces(rd.get(), wr.get()))
         return 1;
 
-    printf("successfully generated %s\n", input_path.c_str());
+    printf("\nsuccessfully generated %s\n", input_path.c_str());
     return 0;
 }
 

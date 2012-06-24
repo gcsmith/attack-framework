@@ -21,7 +21,7 @@ module testbench;
   logic   [1:0] sel_m = '0;
   logic   [3:0] round = '0;
   logic [511:0] m_in = '0, h_in = '0, imask = '0, omask = '0, dout;
-  int fp_sim;
+  int fp_sim, iterations;
 
   // instantiate the DUT
   grostl_compress_serial_m dut(clk, wr_m, wr_h, sel_m, sel_h, sel_pq,
