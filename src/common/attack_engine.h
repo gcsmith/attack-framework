@@ -70,7 +70,7 @@ protected:
 
     size_t              m_reports;  //! total number of reports to generate
     size_t              m_interval; //! user specified reporting interval
-    size_t              m_current;  //! current available trace index
+    size_t              m_index;    //! current available trace index
     std::string         m_results;  //! output results directory
     trace_reader       *m_reader;   //! generic trace reader
     boost::mutex        m_mutex;    //! critical section for trace_reader

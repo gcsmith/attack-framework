@@ -223,4 +223,5 @@ bool attack_cpa<real>::cleanup()
 
 register_attack(cpa, attack_cpa<float>);
 register_attack(cpa_dp, attack_cpa<double>);
+register_attack(cpa_ldp, attack_cpa<long double>);
 

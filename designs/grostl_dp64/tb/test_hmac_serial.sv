@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-`timescale 1ns/1ns
-`define ITERATIONS 1000
+`timescale 1ns/10ps
 
 module testbench;
   logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_d = 0, sel_pq = 0;
@@ -23,7 +22,7 @@ module testbench;
   logic   [3:0] round = '0;
   logic   [2:0] column = '0;
   logic [511:0] m_in = '0, h_in = '0, dout;
-  int fp_sim;
+  int fp_sim, iterations;
 
   // instantiate the DUT
   grostl_compress_serial dut(clk, wr_m, wr_h, sel_m, sel_h, sel_d, sel_pq,
@@ -34,7 +33,6 @@ module testbench;
 
   class iteration_state;
     rand bit [511:0] msg;
-    rand bit [511:0] chain;
   endclass
 
   task drive(logic [3:0] rnd, logic [2:0] col, logic wm, wh, logic [1:0] sm, logic sh, sd, pq);
@@ -53,13 +51,19 @@ module testbench;
     // set the initial system state
     fp_sim = $fopen("simulation.txt", "w");
 
-    for (int i = 0; i < `ITERATIONS; i++) begin
+    if (!$value$plusargs("iterations=%d", iterations))
+        iterations = 1000;
+
+    // initialize the fixed chaining value
+    for (int i = 0; i < 64; i++) begin
+        h_in = { h_in[503:0], 8'b0 };
+        h_in[7:0] = i;
+    end
+
+    for (int i = 0; i < iterations; i++) begin
       // create a random 512-bit message block and chaining value
       automatic iteration_state msg = new;
       void'(msg.randomize());
-
-      // select a random chaining value, then re-use it for future iterations
-      if (i == 0) h_in = msg.chain;
 
       // display and record the timestamp at the start of compression
       $display("%10d - iter %0d", $time, i);

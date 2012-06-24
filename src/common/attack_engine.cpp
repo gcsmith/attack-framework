@@ -28,7 +28,7 @@ using namespace util;
 
 // -----------------------------------------------------------------------------
 attack_engine::attack_engine(void)
-: m_reports(0), m_interval(0), m_current(0)
+: m_reports(0), m_interval(0), m_index(0)
 {
 }
 
@@ -80,8 +80,8 @@ bool attack_engine::attack_setup(const options &opt, trace_reader *pReader)
     // process the user-specified attack options
     m_reader   = pReader;
     m_interval = opt.report_tick ? opt.report_tick : num_traces;
-    m_reports  = (num_traces / m_interval) + (num_traces % m_interval ? 1 : 0);
-    m_current  = 0;
+    m_reports  = 1 + ((num_traces - 1) / m_interval);
+    m_index    = 0;
 
     // reporting interval is not supported when multithreading is enabled
     if ((m_interval < num_traces) && (num_threads > 1)) {
@@ -157,23 +157,25 @@ bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
     {
         // lock the next power trace selection to avoid race conditions
         boost::lock_guard<boost::mutex> lock(m_mutex);
+        const size_t num_traces = m_reader->trace_count();
+
+        if (m_index && (!(m_index % m_interval) || m_index == num_traces)) {
+            const size_t interval_index = (m_index - 1) / m_interval;
+            m_threads[0]->attack()->record_interval(interval_index);
+        }
 
         // if there are no more traces left, signal threads to terminate
-        const size_t num_traces = m_reader->trace_count();
-        if (m_current >= num_traces)
+        if (m_index >= num_traces)
             return false;
-
-        if (m_current && !(m_current % m_interval))
-            m_threads[0]->attack()->record_interval(m_current / m_interval);
 
         // request the next power trace from the trace reader
         if (!m_reader->read(pt)) {
-            fprintf(stderr, "[%d] failed to read trace %zu\n", id, m_current + 1);
+            fprintf(stderr, "[%d] failed to read trace %zu\n", id, m_index + 1);
             return false;
         }
 
         printf("processing trace %s [%d:%zu/%zu]\r",
-               trace_text.c_str(), id, ++m_current, num_traces);
+               trace_text.c_str(), id, ++m_index, num_traces);
     }
 
     if (tmap.size() && tmap.size() != pt.size()) {
@@ -270,12 +272,13 @@ void attack_engine::write_confs_report(const vector<double> &maxes, int nk)
 
     for (size_t i = 0; i < m_reports; ++i) {
         // compute the confidence ratio for each key guess in this interval
+        report << scientific << m_interval * (i + 1) << ',';
         for (int k = 0; k < nk; ++k) {
             double correct = maxes[i * nk + k];
             double incorrect = 0.0;
             for (int j = 0; j < nk; ++j)
                 if (j != k) incorrect = max(incorrect, maxes[i * nk + j]);
-            report << (correct / incorrect) << ',';
+            report << (incorrect > 0.0 ? correct / incorrect : 0) << ',';
         }
         report << endl;
     }

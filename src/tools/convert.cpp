@@ -48,7 +48,7 @@ bool convert_traces(trace_reader *pReader, trace_writer *pWriter)
 
     pReader->close();
     pWriter->close();
-    true;
+    return true;
 }
 
 // -----------------------------------------------------------------------------

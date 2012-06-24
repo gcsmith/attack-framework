@@ -40,10 +40,8 @@ def plot_conf(path):
     key_guess = guess_key_from_conf(data)
     print "key with highest confidence in last interval:", key_guess
 
-    x = range(0, rows * 10, 10)
-
     plt.figure().canvas.set_window_title('Figure - Confidence (' + path + ')')
-    for i in range(cols): plt.plot(x, data[i])
+    for i in range(1, cols): plt.plot(data[0], data[i])
 
     plt.title('Result Confidence')
     plt.xlabel('Traces Applied')

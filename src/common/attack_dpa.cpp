@@ -248,4 +248,5 @@ bool attack_dpa<real>::cleanup()
 
 register_attack(dpa, attack_dpa<float>);
 register_attack(dpa_dp, attack_dpa<double>);
+register_attack(dpa_ldp, attack_dpa<long double>);
 
