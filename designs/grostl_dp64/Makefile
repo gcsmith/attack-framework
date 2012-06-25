@@ -49,7 +49,7 @@ dump.vcd: dump.vpd
 power_waveform_old.fsdb: scr/pt_commands_$(UNIT).tcl dump.vcd
 	PT_PIPE=0 pt_shell $(SYN_ARCH) -f $< | tee -a $(SLOG)
 
-power_waveform_old.out: power_waveform.fsdb
+power_waveform_old.out: power_waveform_old.fsdb
 	fsdb2ns -fmt out -o $@ $<
 
 .PHONY: power_old
