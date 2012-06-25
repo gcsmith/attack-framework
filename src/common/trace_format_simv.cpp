@@ -34,7 +34,7 @@ public:
 
 protected:
     struct record {
-        record(long long _event, const string &_text)
+        record(uint64_t _event, const string &_text)
         : event(_event), text(_text) { }
         uint64_t event; //!< sample event index
         string   text;  //!< plaintext or ciphertext

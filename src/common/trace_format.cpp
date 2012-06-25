@@ -101,19 +101,15 @@ bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
 
     foreach (const trace::sample sample, pt_in.samples()) {
         // primetime may break the power sample into multiple events
-        if (pt_out.size() && pt_out.back().time == sample.time) {
-#if 1
-            pt_out.back().power += sample.power;
-#endif
-            continue;
-        }
+        if (pt_out.size() && pt_out.back().time == sample.time)
+            return false;
 
         // sample and hold by copying the previous power into each empty sample
         while ((curr_event != events.end()) && (*curr_event < sample.time))
-            pt_out.push_back(trace::sample(*curr_event++, sample.power));
+            pt_out.push_back(trace::sample(*curr_event++, last_power));
 
         assert(sample.time == *curr_event);
-        pt_out.push_back(trace::sample(*curr_event++, last_power));
+        pt_out.push_back(trace::sample(*curr_event++, sample.power));
 
 #if 1
         // if this is disabled, last_power will always be 0 (ie. empty samples)
