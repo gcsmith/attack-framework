@@ -25,7 +25,7 @@
 #include <sstream>
 #include <boost/foreach.hpp>
 
-#define EPSILON         0.00001
+#define EPSILON         0.0000001
 #define NUM_ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
 
 #define foreach         BOOST_FOREACH
@@ -56,6 +56,9 @@
 #endif
 
 namespace util {
+
+//! Return true if the real value v is zero (+- EPSILON).
+template <typename T> bool nonzero(T v) { return fabs(v) > EPSILON; }
 
 //! Generate a timestamp using the system clock.
 std::string timestamp(void);

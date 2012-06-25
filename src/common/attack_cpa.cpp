@@ -84,8 +84,8 @@ void attack_cpa<real>::compute_diffs(real *d)
             const size_t off = k * m_nevents + s;
             const real tv = (m_t2[s] - m_t1[s] * m_t1[s] * ni) * ni;
             d[off] = (tw[s] - m_w1[k] * m_t1[s] * ni) * ni;
-            d[off] = (tv != 0.f) ? (d[off] / sqrt(tv)) : 0.f;
-            d[off] = (hv != 0.f) ? (d[off] / sqrt(hv)) : 0.f;
+            d[off] = util::nonzero(tv) ? (d[off] / sqrt(tv)) : 0.0;
+            d[off] = util::nonzero(hv) ? (d[off] / sqrt(hv)) : 0.0;
         }
     }
 }

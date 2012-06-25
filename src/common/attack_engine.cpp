@@ -153,7 +153,6 @@ void attack_engine::attack_shutdown(void)
 // Read in the next available power trace and generate the trace's event map.
 bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
 {
-    const string trace_text(util::btoa(pt.text()));
     {
         // lock the next power trace selection to avoid race conditions
         boost::lock_guard<boost::mutex> lock(m_mutex);
@@ -175,7 +174,7 @@ bool attack_engine::next_trace(int id, vector<long> &tmap, trace &pt)
         }
 
         printf("processing trace %s [%d:%zu/%zu]\r",
-               trace_text.c_str(), id, ++m_index, num_traces);
+               util::btoa(pt.text()).c_str(), id, ++m_index, num_traces);
     }
 
     if (tmap.size() && tmap.size() != pt.size()) {

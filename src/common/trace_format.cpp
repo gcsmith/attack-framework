@@ -29,6 +29,7 @@ extern trace_reader *create_trace_reader_v1(void);
 extern trace_reader *create_trace_reader_v2(void);
 extern trace_reader *create_trace_reader_v3(void);
 
+extern trace_writer *create_trace_writer_csv(void);
 extern trace_writer *create_trace_writer_packed(void);
 extern trace_writer *create_trace_writer_sqlite(void);
 extern trace_writer *create_trace_writer_v3(void);
@@ -131,7 +132,8 @@ bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
 // static
 trace_writer *trace_writer::create(const string &format)
 {
-    if      (format == "packed") return create_trace_writer_packed();
+    if      (format == "csv")    return create_trace_writer_csv();
+    else if (format == "packed") return create_trace_writer_packed();
     else if (format == "v3")     return create_trace_writer_v3();
 #ifdef HAVE_SQLITE3_H
     else if (format == "sqlite") return create_trace_writer_sqlite();

@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     static const string usage_message = string(argv[0]) + " [options]";
     static const cmdline_option cmdline_args[] = {
         { CL_STR,  "src-fmt,s",     "convert from source format" },
-        { CL_STR,  "dest-fmt,d",    "convert to destination format" },
+        { CL_STR,  "dst-fmt,d",     "convert to destination format" },
         { CL_STR,  "input-path,i",  "specify the input trace path" },
         { CL_STR,  "output-path,o", "specify the output trace path" },
         { CL_STR,  "key,k",         "convert traces with the specified key" },
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
     if (!convert_traces(rd.get(), wr.get()))
         return 1;
 
-    printf("\nsuccessfully generated %s\n", input_path.c_str());
+    printf("\nsuccessfully generated %s\n", output_path.c_str());
     return 0;
 }
 

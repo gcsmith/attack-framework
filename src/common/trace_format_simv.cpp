@@ -194,8 +194,8 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base)
                 ++m_traces;
 
                 printf("scanned trace %lu\r", record_index);
-                if (m_opt.num_traces && m_traces >= m_opt.num_traces ||
-                    ++record_index >= (m_records.size() - 1))
+                if ((m_opt.num_traces && (m_traces >= m_opt.num_traces)) ||
+                    (++record_index >= (m_records.size() - 1)))
                     break;
             }
 

@@ -33,6 +33,7 @@ set(common_src
     des.cpp
     grostl.cpp
     trace_format.cpp
+    trace_format_csv.cpp
     trace_format_out.cpp
     trace_format_packed.cpp
     trace_format_simv.cpp
