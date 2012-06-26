@@ -158,7 +158,6 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base)
 
     while (getline(wav_in, curr_line)) {
         // skip empty lines or lines containing comments
-        util::trim(curr_line);
         if (!curr_line.length() || curr_line[0] == ';')
             continue;
 
@@ -187,6 +186,7 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base)
             }
             else if (event_time >= m_records[record_index + 1].event) {
                 // dump the current trace data and select the next timestamp
+                m_wavfile << record_index << ' ';
                 foreach (const trace::sample &sample, curr_trace.samples())
                     m_wavfile << sample.time << ' ' << sample.power << ' ';
                 m_wavfile << endl;
@@ -213,8 +213,7 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base)
         }
         else if (curr_line[0] == '1' && curr_trace.size()) {
             // only write out data for the top level events (pp_root)
-            const string pow_str = util::trim_copy(curr_line.substr(split_pos));
-            curr_trace.back().power += strtod(pow_str.c_str(), NULL);
+            curr_trace.back().power += strtod(&curr_line[split_pos], NULL);
         }
     }
 
@@ -236,19 +235,23 @@ bool trace_reader_simv::read(trace &pt)
     if (m_current >= m_traces)
         return false;
 
-    // initialize the trace object with the message text from simulation.txt
-    pt.clear();
-    pt.set_text(util::atob(m_records[m_current].text));
-
     string line;
     getline(m_wavfile, line);
-
-    trace curr_trace;
-    trace::sample sample;
     istringstream iss(line);
 
+    // read in the record index to determine the correct message text
+    size_t record_index = 0;
+    iss >> record_index;
+
+    // read in the event time and power consumption for each trace sample
+    trace curr_trace;
+    trace::sample sample;
     while (iss >> sample.time >> sample.power)
         curr_trace.push_back(sample);
+
+    // initialize the trace object with the message text from simulation.txt
+    pt.clear();
+    pt.set_text(util::atob(m_records[record_index].text));
 
     ++m_current;
     return trace_reader::copy_trace(curr_trace, pt, m_events);
