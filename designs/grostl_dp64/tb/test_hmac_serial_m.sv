@@ -59,8 +59,8 @@ module testbench;
 
     // initialize the fixed chaining value
     for (int i = 0; i < 64; i++) begin
+        h_in = { h_in[503:0], 8'b0 };
         h_in[7:0] = i;
-        h_in = { h_in[7:0], h_in[511:8] };
     end
 
     for (int i = 0; i < iterations; i++) begin
