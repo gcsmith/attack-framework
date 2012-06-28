@@ -23,31 +23,34 @@ module grostl_compress_serial_m(input          clk, wr_m, wr_h,
                                 input   [63:0] imask, omask,
                                 output [511:0] dout);
 
-  logic [0:7][0:7][7:0] m_reg, h_reg, p_reg;
-  logic [0:7][0:7][7:0] m_val, h_val, mhxor, s_shf, d_val;
-  logic [0:7][7:0] s_arc, s_sub, s_mix, imask_reg, omask_reg, x3, x4;
+  logic [0:7][0:7][7:0] m_reg, h_reg, p_reg, m_val, h_val, mhxor, s_shf, d_val;
+  logic [0:7][7:0] s_arc, s_sub, s_mix, imask_reg, omask_reg, x3, x4, sb_imask, sb_omask;
 
   // mask computation
   grostl_mix_bytes m_mix_bytes(omask_reg, x3);
-  assign x4 = x3 ^ imask_reg;
 
+  assign sb_imask =  sel_pq ? '0 : imask_reg;
+  assign sb_omask =  sel_pq ? '0 : omask_reg;
+  assign x4       = ~sel_pq ? '0 : imask_reg ^ x3;
+
+  // round computation
   grostl_shift_bytes  pq_shf_bytes(m_reg, sel_pq, s_shf);
   grostl_add_constant pq_add_const(d_val[0], sel_pq, rnd, col, s_arc);
-  grostl_sub_bytes_m  pq_sub_bytes(s_arc, imask_reg, omask_reg, s_sub);
+  grostl_sub_bytes_m  pq_sub_bytes(s_arc, sb_imask, sb_omask, s_sub);
   grostl_mix_bytes    pq_mix_bytes(p_reg[0], s_mix);
 
   assign mhxor = m_reg ^ h_reg;
   assign dout  = m_reg;
 
   always_comb case (sel_m)
-    2'b00:   m_val <= m_in ^ { 8{imask} };        // 0: masked message input
+    2'b00:   m_val <= m_in;                       // 0: masked message input
     2'b01:   m_val <= { p_reg[1:7], s_mix ^ x4 }; // 1: column-rotated round output
     default: m_val <= mhxor;                      // 2: m xor h
   endcase
 
   always_comb case (sel_h)
-    1'b0:    h_val <= h_in;  // 0: hash input (IV)
-    default: h_val <= mhxor; // 1: m xor h
+    1'b0:    h_val <= h_in ^ { 8{imask} };        // 0: hash input (IV)
+    default: h_val <= mhxor;                      // 1: m xor h
   endcase
 
   always_comb case (sel_d)

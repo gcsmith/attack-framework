@@ -22,7 +22,7 @@ module testbench;
   logic   [3:0] round = '0;
   logic   [2:0] column = '0;
   logic [511:0] m_in = '0, h_in = '0, dout;
-  int fp_sim, iterations;
+  int fp_sim, iterations, max_rounds;
 
   // instantiate the DUT
   grostl_compress_serial dut(clk, wr_m, wr_h, sel_m, sel_h, sel_d, sel_pq,
@@ -53,6 +53,8 @@ module testbench;
 
     if (!$value$plusargs("iterations=%d", iterations))
         iterations = 1000;
+    if (!$value$plusargs("max_rounds=%d", max_rounds))
+        max_rounds = 2;
 
     // initialize the fixed chaining value
     for (int i = 0; i < 64; i++) begin
@@ -86,18 +88,18 @@ module testbench;
         drive(0, c, 1, 0, 2'b01, 0, 0, 0); // Q-S2, P-S1
       end
 
-//    for (int r = 1; r < 10; r++) begin
-//      drive(r, 0, 1, 0, 2'b01, 0, 1, 1); // Q-S1, P-S2
-//      drive(r, 0, 1, 0, 2'b01, 0, 1, 0); // Q-S2, P-S1
+      for (int r = 1; r < max_rounds; r++) begin
+        drive(r, 0, 1, 0, 2'b01, 0, 1, 1); // Q-S1, P-S2
+        drive(r, 0, 1, 0, 2'b01, 0, 1, 0); // Q-S2, P-S1
 
-//      for (int c = 1; c < 8; c++) begin
-//        drive(r, c, 1, 0, 2'b01, 0, 0, 1); // Q-S1, P-S2
-//        drive(r, c, 1, 0, 2'b01, 0, 0, 0); // Q-S2, P-S1
-//      end
-//    end
+        for (int c = 1; c < 8; c++) begin
+          drive(r, c, 1, 0, 2'b01, 0, 0, 1); // Q-S1, P-S2
+          drive(r, c, 1, 0, 2'b01, 0, 0, 0); // Q-S2, P-S1
+        end
+      end
 
-//    drive(0, 7, 1, 1, 2'b01, 1, 0, 1); // 21: P-S2, H^=M(Q_out)
-//    drive(0, 0, 1, 1, 2'b10, 1, 0, 0); // 0*: P-S2, H^=M(P_out) (next block)
+      drive(0, 7, 1, 1, 2'b01, 1, 0, 1); // 21: P-S2, H^=M(Q_out)
+      drive(0, 0, 1, 1, 2'b10, 1, 0, 0); // 0*: P-S2, H^=M(P_out) (next block)
       @(posedge clk);
 
       // retrieve the output state and write it to the trace file

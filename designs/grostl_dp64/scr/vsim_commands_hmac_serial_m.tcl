@@ -6,12 +6,12 @@ vmap work work
 # compile the design and testbench
 
 vlog rtl/grostl_add_constant.sv
-vlog rtl/grostl_compress_serial.sv
+vlog rtl/grostl_compress_serial_m.sv
 vlog rtl/grostl_mix_bytes.sv
-vlog rtl/grostl_sbox_lut.sv
+vlog rtl/grostl_sbox_masked.sv
 vlog rtl/grostl_shift_bytes.sv
-vlog rtl/grostl_sub_bytes.sv
-vlog tb/test_compress_serial.sv
+vlog rtl/grostl_sub_bytes_m.sv
+vlog tb/test_hmac_serial_m.sv
 
 # invoke the simulator
 
