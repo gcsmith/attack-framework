@@ -20,9 +20,6 @@
 #include <string>
 #include "trace.h"
 
-#define TRACE_SUM_DUPLICATES    1
-#define TRACE_SAMPLE_AND_HOLD   1
-
 //! abstract interface for trace reader objects
 struct trace_reader {
 

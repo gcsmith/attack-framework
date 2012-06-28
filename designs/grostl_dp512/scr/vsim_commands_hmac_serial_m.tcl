@@ -19,7 +19,7 @@ vlog tb/test_hmac_serial_m.sv
 
 # invoke the simulator
 
-vsim -voptargs="+acc" -t 1ns -lib work work.testbench
+vsim $env(SYN_PLUS) -voptargs="+acc" -t 1ns -lib work work.testbench
 
 # add relevent waveforms to the wave window
 
@@ -57,5 +57,4 @@ view structure
 view signals
 
 run 30ms
-
 

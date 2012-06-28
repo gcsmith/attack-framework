@@ -14,15 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-`timescale 1ns/1ns
-`define ITERATIONS 1000
+`timescale 1ns/10ps
 
 module testbench;
   logic         clk = 0, wr_m = 0, wr_h = 0, sel_h = 0, sel_pq = 0;
   logic   [1:0] sel_m = '0;
   logic   [3:0] round = '0;
   logic [511:0] m_in = '0, h_in = '0, imask = '0, omask = '0, dout;
-  int fp_sim;
+  int fp_sim, iterations, max_rounds;
 
   // instantiate the DUT
   grostl_compress_serial_m dut(clk, wr_m, wr_h, sel_m, sel_h, sel_pq,
@@ -52,7 +51,12 @@ module testbench;
     // set the initial system state
     fp_sim = $fopen("simulation.txt", "w");
 
-    for (int i = 0; i < `ITERATIONS; i++) begin
+    if (!$value$plusargs("iterations=%d", iterations))
+        iterations = 1000;
+    if (!$value$plusargs("max_rounds=%d", max_rounds))
+        max_rounds = 10;
+
+    for (int i = 0; i < iterations; i++) begin
       // create a random 512-bit message block and chaining value
       automatic iteration_state msg = new;
       void'(msg.randomize());
@@ -77,7 +81,7 @@ module testbench;
 
       drive(0, 1, 0, 2'b01, 0, 0); // 2: Q-S2, P-S1
 
-      for (int r = 1; r < 10; r++) begin
+      for (int r = 1; r < max_rounds; r++) begin
         drive(r, 1, 0, 2'b01, 0, 1); // Q-S1, P-S2
         drive(r, 1, 0, 2'b01, 0, 0); // Q-S2, P-S1
       end

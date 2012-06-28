@@ -137,9 +137,9 @@ void attack_engine::attack_shutdown(void)
     first_thread->attack()->get_maxes(maxes);
 
     const int num_guesses = 1 << first_thread->crypto()->estimate_bits();
-    write_diffs_report(diffs, num_guesses);
     write_maxes_report(maxes, num_guesses);
     write_confs_report(maxes, num_guesses);
+    write_diffs_report(diffs, num_guesses);
 
     // allow the attack to write out additional reports if necessary
     first_thread->attack()->write_results(m_results);

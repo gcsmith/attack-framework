@@ -106,15 +106,13 @@ bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
 
         // sample and hold by copying the previous power into each empty sample
         while ((curr_event != events.end()) && (*curr_event < sample.time))
-            pt_out.push_back(trace::sample(*curr_event++, last_power));
+            pt_out.push_back(trace::sample(*curr_event++, sample.power));
 
         assert(sample.time == *curr_event);
         pt_out.push_back(trace::sample(*curr_event++, sample.power));
 
-#if 1
         // if this is disabled, last_power will always be 0 (ie. empty samples)
         last_power = sample.power;
-#endif
     }
 
     // pad out (with sample and hold) any trailing samples, if necessary
