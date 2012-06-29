@@ -5,13 +5,14 @@ vmap work work
 
 # compile the design and testbench
 
-vlog rtl/rijndael_sbox_masked.sv
-vlog rtl/rijndael_simple_func_m.sv
-vlog tb/test_simple_func_m.sv
+vlog rtl/rijndael_sbox_masked.sv                \
+     rtl/rijndael_simple_func_m.sv              \
+     tb/test_simple_func_m.sv                   \
+     $env(SYN_VDEF)
 
 # invoke the simulator
 
-vsim -voptargs="+acc" -t 1ns -lib work work.testbench
+vsim $env(SYN_PLUS) -voptargs="+acc" -t 1ns -lib work work.testbench
 
 # add relevent waveforms to the wave window
 

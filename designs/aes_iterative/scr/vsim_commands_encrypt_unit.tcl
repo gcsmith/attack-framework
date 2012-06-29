@@ -5,20 +5,22 @@ vmap work work
 
 # compile the design and testbench
 
-vlog rtl/aes_add_round_key.sv
-vlog rtl/aes_sbox_lut.sv
-vlog rtl/aes_dual_row_mem.sv
-vlog rtl/aes_encrypt_control.sv
-vlog rtl/aes_key_mem.sv
-vlog rtl/aes_mix_columns.sv
-vlog rtl/aes_read_mux.sv
-vlog rtl/aes_write_mux.sv
-vlog rtl/aes_encrypt_unit.sv
-vlog tb/test_encrypt_unit.sv
+vlog rtl/aes_add_round_key.sv                   \
+     rtl/aes_sbox_logic.sv                      \
+     rtl/aes_sbox_lut.sv                        \
+     rtl/aes_dual_row_mem.sv                    \
+     rtl/aes_encrypt_control.sv                 \
+     rtl/aes_key_mem.sv                         \
+     rtl/aes_mix_columns.sv                     \
+     rtl/aes_read_mux.sv                        \
+     rtl/aes_write_mux.sv                       \
+     rtl/aes_encrypt_unit.sv                    \
+     tb/test_encrypt_unit.sv                    \
+     $env(SYN_VDEF)
 
 # invoke the simulator
 
-vsim -voptargs="+acc" -t 1ns -lib work work.testbench
+vsim $env(SYN_PLUS) -voptargs="+acc" -t 1ns -lib work work.testbench
 
 # add relevent waveforms to the wave window
 

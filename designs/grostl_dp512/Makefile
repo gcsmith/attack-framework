@@ -3,6 +3,7 @@ AMD64 ?= 0
 SEED ?= random
 UNIT ?= compress_serial
 PLUS ?=
+VDEF ?=
 CLOG = compile.log
 SLOG = simulate.log
 
@@ -22,6 +23,8 @@ ifeq ($(SEED), random)
 else
     export SYN_PLUS = $(PLUS) +ntb_random_seed=$(SEED)
 endif
+
+export SYN_VDEF = $(VDEF)
 
 ################################################################################
 # rule to create the gate-level netlist

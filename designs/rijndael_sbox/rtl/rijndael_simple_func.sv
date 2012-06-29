@@ -42,7 +42,11 @@ module rijndael_simple_func(input        clk, rst, valid,
     endcase
   end
 
+`ifdef LOGIC_SBOX
+  bSbox sub_bytes(data_reg, '1, sb_out);
+`else
   rijndael_sbox_lut sub_bytes(data_reg, sb_out);
+`endif
 
   assign dout = data_reg;
 

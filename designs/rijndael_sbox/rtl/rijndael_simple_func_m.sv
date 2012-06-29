@@ -46,7 +46,7 @@ module rijndael_simple_func_m(input        clk, rst, valid,
     endcase
   end
 
-  bSbox sub_bytes(data_reg, imask_reg, omask_reg, 1'b1, sb_out);
+  bSbox sub_bytes(data_reg, imask_reg, omask_reg, '1, sb_out);
 
   assign dout = data_reg ^ omask;
 

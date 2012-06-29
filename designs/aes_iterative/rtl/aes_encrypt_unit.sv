@@ -26,7 +26,11 @@ module aes_encrypt_unit(input        clk, reset, valid_input,
   wire [7:0] state, key, ak_out, sb_out, mc_out, wr_data, key_addr, r0, r1, r2, r3;
 
   aes_add_round_key add_round_key(state, key, ak_out);
+`ifdef LOGIC_SBOX
+  bSbox sub_bytes(state, '1, sb_out);
+`else
   aes_sbox_lut sub_bytes(state, sb_out);
+`endif
 
   aes_dual_row_mem mem0(clk, wr_row[0], wr_col, rd_col, wr_data, r0);
   aes_dual_row_mem mem1(clk, wr_row[1], wr_col, rd_col, wr_data, r1);

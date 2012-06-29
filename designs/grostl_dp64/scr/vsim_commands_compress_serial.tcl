@@ -5,13 +5,15 @@ vmap work work
 
 # compile the design and testbench
 
-vlog rtl/grostl_add_constant.sv
-vlog rtl/grostl_compress_serial.sv
-vlog rtl/grostl_mix_bytes.sv
-vlog rtl/grostl_sbox_lut.sv
-vlog rtl/grostl_shift_bytes.sv
-vlog rtl/grostl_sub_bytes.sv
-vlog tb/test_compress_serial.sv
+vlog rtl/grostl_add_constant.sv                 \
+     rtl/grostl_compress_serial.sv              \
+     rtl/grostl_mix_bytes.sv                    \
+     rtl/grostl_sbox_logic.sv                   \
+     rtl/grostl_sbox_lut.sv                     \
+     rtl/grostl_shift_bytes.sv                  \
+     rtl/grostl_sub_bytes.sv                    \
+     tb/test_compress_serial.sv                 \
+     $env(SYN_VDEF)
 
 # invoke the simulator
 

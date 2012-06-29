@@ -19,7 +19,7 @@
 module testbench;
   logic       clk = 0, rst = 0, valid = 0;
   logic [7:0] din = '0, key = '0, imask = '0, omask = '0, dout;
-  int fp_sim, iterations;
+  int         fp_sim, iterations;
 
   const logic [7:0] key_rom[0:15] = '{
       'h00, 'h11, 'h22, 'h33, 'h44, 'h55, 'h66, 'h77,

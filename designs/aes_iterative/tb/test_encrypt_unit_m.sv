@@ -20,9 +20,10 @@ module testbench;
   logic       clk = 0, rst = 0, valid_in = 0, valid_out;
   logic [7:0] din = '0, imask = '0, omask = '0, dout;
   logic [3:0] rnd;
-  int fp_sim, iterations, max_rounds;
+  int         fp_sim, iterations, max_rounds;
 
-  aes_encrypt_unit_m dut(clk, rst, valid_in, din, imask, omask, valid_out, dout, rnd);
+  aes_encrypt_unit_m dut(clk, rst, valid_in, din, imask, omask, valid_out,
+                         dout, rnd);
 
   // invert the clock signal every 20 ns
   always #20 clk = ~clk;

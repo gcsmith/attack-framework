@@ -20,7 +20,7 @@ module testbench;
   logic       clk = 0, rst = 0, valid_in = 0, valid_out;
   logic [7:0] din = '0, dout;
   logic [3:0] rnd;
-  int fp_sim, iterations, max_rounds;
+  int         fp_sim, iterations, max_rounds;
 
   aes_encrypt_unit dut(clk, rst, valid_in, din, valid_out, dout, rnd);
 

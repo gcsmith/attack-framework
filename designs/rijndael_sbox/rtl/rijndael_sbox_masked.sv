@@ -360,25 +360,25 @@ assign X[0] = ~ C[2] ;
     SELECT_NOT_8 sel_out( D, X, encrypt, Q );
 endmodule
 
-/* test program: put Sbox output into register */
-/* with MASKING: the input mask M and output mask N must be given */
-/*   NOTE: these two 8-bit masks must be random and INDEPENDENT */
-module Sbox_m ( A, M, N, S, Si, CLK );
-    input  [7:0] A;
-    input  [7:0] M;
-    input  [7:0] N;
-    output [7:0] S;
-    output [7:0] Si;
-    input  CLK  /* synthesis syn_noclockbuf=1 */ ;
-    reg    [7:0] S;
-    reg    [7:0] Si;
-    wire   [7:0] s;
-    wire   [7:0] si;
-    
-    bSbox sbe(A, M, N, 1, s);
-    bSbox sbd(A, M, N, 0, si);
-    always @ (posedge CLK) begin
-    S <= s;
-    Si <= si;
-    end
-endmodule
+// GCS: /* test program: put Sbox output into register */
+// GCS: /* with MASKING: the input mask M and output mask N must be given */
+// GCS: /*   NOTE: these two 8-bit masks must be random and INDEPENDENT */
+// GCS: module Sbox_m ( A, M, N, S, Si, CLK );
+// GCS:     input  [7:0] A;
+// GCS:     input  [7:0] M;
+// GCS:     input  [7:0] N;
+// GCS:     output [7:0] S;
+// GCS:     output [7:0] Si;
+// GCS:     input  CLK  /* synthesis syn_noclockbuf=1 */ ;
+// GCS:     reg    [7:0] S;
+// GCS:     reg    [7:0] Si;
+// GCS:     wire   [7:0] s;
+// GCS:     wire   [7:0] si;
+// GCS:     
+// GCS:     bSbox sbe(A, M, N, 1, s);
+// GCS:     bSbox sbd(A, M, N, 0, si);
+// GCS:     always @ (posedge CLK) begin
+// GCS:     S <= s;
+// GCS:     Si <= si;
+// GCS:     end
+// GCS: endmodule

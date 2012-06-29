@@ -19,7 +19,11 @@ module grostl_sub_bytes(input  [0:7][7:0] din,
 
   generate
     for (genvar i = 0; i < 8; i++) begin: gen_sbox
+`ifdef LOGIC_SBOX
+      bSbox sub_bytes(din[i], '1, dout[i]);
+`else
       grostl_sbox_lut sub_bytes(din[i], dout[i]);
+`endif
     end
   endgenerate
 
