@@ -24,7 +24,8 @@ module grostl_compress_serial_m(input          clk, wr_m, wr_h,
                                 output [511:0] dout);
 
   logic [0:7][0:7][7:0] m_reg, h_reg, p_reg, m_val, h_val, mhxor, s_shf, d_val;
-  logic [0:7][7:0] s_arc, s_sub, s_mix, imask_reg, omask_reg, x3, x4, sb_imask, sb_omask;
+  logic [0:7][7:0]      s_arc, s_sub, s_mix, imask_reg, omask_reg, x3, x4,
+                        sb_imask, sb_omask;
 
   // mask computation
   grostl_mix_bytes m_mix_bytes(omask_reg, x3);
@@ -43,13 +44,13 @@ module grostl_compress_serial_m(input          clk, wr_m, wr_h,
   assign dout  = m_reg;
 
   always_comb case (sel_m)
-    2'b00:   m_val <= m_in;                       // 0: masked message input
-    2'b01:   m_val <= { p_reg[1:7], s_mix ^ x4 }; // 1: column-rotated round output
-    default: m_val <= mhxor;                      // 2: m xor h
+    2'b00:   m_val <= m_in;                       // 00: message input
+    2'b01:   m_val <= { p_reg[1:7], s_mix ^ x4 }; // 01: rotated round output
+    default: m_val <= mhxor;                      // 10: m xor h
   endcase
 
   always_comb case (sel_h)
-    1'b0:    h_val <= h_in ^ { 8{imask} };        // 0: hash input (IV)
+    1'b0:    h_val <= h_in ^ { 8{imask} };        // 0: masked chaining input
     default: h_val <= mhxor;                      // 1: m xor h
   endcase
 

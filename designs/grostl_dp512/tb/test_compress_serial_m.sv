@@ -21,7 +21,7 @@ module testbench;
   logic   [1:0] sel_m = '0;
   logic   [3:0] round = '0;
   logic [511:0] m_in = '0, h_in = '0, imask = '0, omask = '0, dout;
-  int fp_sim, iterations, max_rounds;
+  int           fp_sim, iterations, max_rounds;
 
   // instantiate the DUT
   grostl_compress_serial_m dut(clk, wr_m, wr_h, sel_m, sel_h, sel_pq,
@@ -37,7 +37,10 @@ module testbench;
     rand bit [511:0] omask;
   endclass
 
-  task drive(input logic [3:0] rnd, logic wm, wh, logic [1:0] sm, logic sh, pq);
+  task drive(logic [3:0] rnd,
+             logic       wm, wh,
+             logic [1:0] sm,
+             logic       sh, pq);
     @(posedge clk);
     round = rnd;
     wr_m = wm;

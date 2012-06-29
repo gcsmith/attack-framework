@@ -24,7 +24,7 @@ module grostl_compress_serial(input          clk, wr_m, wr_h,
 
   logic [0:7][0:7][7:0] m_reg, h_reg, p_reg;
   logic [0:7][0:7][7:0] m_val, h_val, mhxor, s_shf, d_val;
-  logic [0:7][7:0] s_arc, s_sub, s_mix;
+  logic [0:7][7:0]      s_arc, s_sub, s_mix;
 
   grostl_shift_bytes  shf_bytes(m_reg, sel_pq, s_shf);
   grostl_add_constant add_const(d_val[0], sel_pq, rnd, col, s_arc); // stage 1

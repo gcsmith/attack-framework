@@ -22,7 +22,7 @@ module testbench;
   logic   [3:0] round = '0;
   logic   [2:0] column = '0;
   logic [511:0] m_in = '0, h_in = '0, dout;
-  int fp_sim, iterations, max_rounds;
+  int           fp_sim, iterations, max_rounds;
 
   // instantiate the DUT
   grostl_compress_serial dut(clk, wr_m, wr_h, sel_m, sel_h, sel_d, sel_pq,
@@ -36,7 +36,11 @@ module testbench;
     rand bit [511:0] chain;
   endclass
 
-  task drive(logic [3:0] rnd, logic [2:0] col, logic wm, wh, logic [1:0] sm, logic sh, sd, pq);
+  task drive(logic [3:0] rnd,
+             logic [2:0] col,
+             logic       wm, wh,
+             logic [1:0] sm,
+             logic       sh, sd, pq);
     @(posedge clk);
     round = rnd;
     column = col;
