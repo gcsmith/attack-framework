@@ -11,18 +11,27 @@ set link_library {* core_typ.db}
 ################################################################################
 
 set compile_clock_gating_through_hierarchy true
-read_file -format sverilog "rijndael_sbox_lut.sv"
-read_file -format sverilog "rijndael_simple_func.sv"
+
+regsub -all {\+define\+} $env(SYN_VDEF) { } def
+read_file -format sverilog -define [ list $def ] {                          \
+          rijndael_sbox_logic.sv                                            \
+          rijndael_sbox_lut.sv                                              \
+          rijndael_simple_func.sv                                           \
+      }
 
 current_design rijndael_simple_func
 link
 
+list_designs
 uniquify -force
 
 #set_clock_gating_style -sequential_cell none -num_stages 3
 
 check_design
 compile -map_effort medium
+
+report_cell
+report_area -hierarchy
 
 ################################################################################
 # Generate the gate-level netlist
