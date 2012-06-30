@@ -23,6 +23,7 @@
 
 typedef std::vector<long> time_map;
 
+//! Abstract interface for crypto instance objects.
 struct crypto_instance {
     //! Set the current message block (plaintext or ciphertext).
     virtual void set_message(const std::vector<uint8_t> &msg) = 0;
@@ -52,6 +53,7 @@ struct crypto_instance {
     virtual ~crypto_instance() {}
 };
 
+//! Abstract interface for crypto instance objects.
 struct attack_instance {
     //! Process attack parameters and perform pre-attack initialization.
     virtual bool setup(crypto_instance *crypto, const util::parameters &params) = 0;
@@ -71,10 +73,10 @@ struct attack_instance {
     //! Perform post-attack shutdown (if any).
     virtual bool cleanup() = 0;
 
-    //! TODO: description
+    //! Return differential trace for each key guess.
     virtual void get_diffs(std::vector<double> &diffs) = 0;
 
-    //! TODO: description
+    //! Return trace maxes for each recorded interval.
     virtual void get_maxes(std::vector<double> &maxes) = 0;
 
     //! Explicit virtual destructor, as attack_instance will be subclassed

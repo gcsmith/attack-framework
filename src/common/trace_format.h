@@ -20,9 +20,9 @@
 #include <string>
 #include "trace.h"
 
-//! abstract interface for trace reader objects
+//! Abstract interface for trace reader objects.
 struct trace_reader {
-
+    //! Trace reader options.
     struct options {
         size_t min_time;
         size_t max_time;
@@ -31,54 +31,54 @@ struct trace_reader {
         std::string key;
     };
 
-    //! attempt to determine the trace format from the input path
+    //! Attempt to determine the trace format from the input path.
     static std::string guess_format(const std::string &path);
 
-    //! create a trace_reader instance for the given trace format
+    //! Create a trace_reader instance for the given trace format.
     static trace_reader *create(const std::string &format);
 
-    //! copy the input trace to the output trace, expanding if necessary
+    //! Copy the input trace to the output trace, expanding if necessary.
     static bool copy_trace(const trace &pt_in, trace &pt_out,
                            const trace::event_set &events);
 
-    //! provide a summary of the specified trace directory
+    //! Provide a summary of the specified trace directory.
     virtual bool summary(const std::string &path) const = 0;
 
-    //! open the reader for a specified key and plaintex/ciphertext selection
+    //! Open the reader for a specified key and plaintext/ciphertext selection.
     virtual bool open(const std::string &path, const options &opt) = 0;
 
-    //! close the reader and perform cleanup
+    //! Close the reader and perform cleanup.
     virtual void close(void) = 0;
 
-    //! read the next trace into pt, limited to the specified time range
+    //! Read the next trace into pt, limited to the specified time range.
     virtual bool read(trace &pt) = 0;
 
-    //! returns the number traces available for reading
+    //! Returns the number traces available for reading.
     virtual size_t trace_count(void) const = 0;
 
-    //! returns a set of time events across the traces read so far
+    //! Returns a set of time events across the traces read so far.
     virtual const trace::event_set &events(void) const = 0;
 
-    //! explicit virtual destructor, as trace_reader will be subclassed
+    //! Explicit virtual destructor, as trace_reader will be sub-classed.
     virtual ~trace_reader(void) { }
 };
 
-//! abstract interface for trace writer objects
+//! Abstract interface for trace writer objects.
 struct trace_writer {
-    //! create a trace_writer instance for the given trace format
+    //! Create a trace_writer instance for the given trace format.
     static trace_writer *create(const std::string &format);
 
-    //! open the writer for a specified key
+    //! Open the writer for a specified key.
     virtual bool open(const std::string &path, const std::string &key,
                       const trace::event_set &events) = 0;
 
-    //! close the writer and perform cleanup
+    //! Close the writer and perform cleanup.
     virtual void close(void) = 0;
 
-    //! write the next trace object
+    //! Write the next trace object.
     virtual bool write(const trace &pt) = 0;
 
-    //! explicit virtual destructor, as trace_writer will be subclassed
+    //! Explicit virtual destructor, as trace_writer will be sub-classed.
     virtual ~trace_writer(void) { }
 };
 

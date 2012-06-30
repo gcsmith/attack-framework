@@ -64,10 +64,7 @@ attack_relpow::~attack_relpow()
 // -----------------------------------------------------------------------------
 bool attack_relpow::setup(crypto_instance *crypto, const parameters &params)
 {
-    const int key_length = crypto->key_bits() >> 3;
-    const int num_states = 1 << crypto->estimate_bits();
     string key_string;
-
     if (!params.get("num_events", m_nevents) ||
         !params.get("num_reports", m_nreports) ||
         !params.get("bytes", m_bytes) ||
@@ -76,6 +73,9 @@ bool attack_relpow::setup(crypto_instance *crypto, const parameters &params)
         fprintf(stderr, "required parameters: key, bytes, offset\n");
         return false;
     }
+
+    const int key_length = crypto->key_bits() >> 3;
+    const int num_states = crypto->estimate_bits() * m_bytes;
 
     vector<uint8_t> key(key_length);
     if (!util::atob(key_string, &key[0], key_length))
@@ -118,7 +118,7 @@ void attack_relpow::record_interval(size_t n)
 // -----------------------------------------------------------------------------
 void attack_relpow::coalesce(attack_instance *inst)
 {
-    const int num_states = 1 << m_crypto->estimate_bits();
+    const int num_states = m_crypto->estimate_bits() * m_bytes;
     attack_relpow *other = (attack_relpow *)inst;
 
     for (int i = 0; i < num_states; ++i) {
@@ -146,7 +146,7 @@ void attack_relpow::write_results(const string &path)
 {
     const string p_path = util::concat_name(path, "relpow_power.csv");
     const string t_path = util::concat_name(path, "relpow_traces.csv");
-    const int num_states = 1 << m_crypto->estimate_bits();
+    const int num_states = m_crypto->estimate_bits() * m_bytes;
 
     // plot of sensitive value vs. power consumption
     ofstream fp_p(p_path.c_str());
@@ -177,5 +177,5 @@ bool attack_relpow::cleanup()
     return true;
 }
 
-register_attack(relpow, attack_relpow());
+register_attack(relpow, attack_relpow);
 

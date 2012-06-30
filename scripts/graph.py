@@ -46,6 +46,7 @@ def plot_conf(path):
     plt.title('Result Confidence')
     plt.xlabel('Traces Applied')
     plt.ylabel('Confidence Ratio')
+    plt.gca().yaxis.grid(color='gray', linestyle='dashed')
     plt.show()
 
 # ------------------------------------------------------------------------------
@@ -59,6 +60,7 @@ def plot_corr(path):
     plt.title('Correlation')
     plt.xlabel('Time (ps)')
     plt.ylabel('Correlation Coefficient')
+    plt.gca().yaxis.grid(color='gray', linestyle='dashed')
     plt.show()
 
 # ------------------------------------------------------------------------------
