@@ -24,7 +24,8 @@
 typedef std::vector<long> time_map;
 
 //! Abstract interface for crypto instance objects.
-struct crypto_instance {
+class crypto_instance {
+public:
     //! Set the current message block (plaintext or ciphertext).
     virtual void set_message(const std::vector<uint8_t> &msg) = 0;
 
@@ -54,7 +55,8 @@ struct crypto_instance {
 };
 
 //! Abstract interface for crypto instance objects.
-struct attack_instance {
+class attack_instance {
+public:
     //! Process attack parameters and perform pre-attack initialization.
     virtual bool setup(crypto_instance *crypto, const util::parameters &params) = 0;
 

@@ -6,20 +6,20 @@ import matplotlib.pyplot as plt
 
 # ------------------------------------------------------------------------------
 def read_csv(path):
-    data = np.genfromtxt(path, delimiter=',', skip_header=1, unpack=True)
+    data = np.genfromtxt(path, delimiter=',', skip_header=0, unpack=True)
     cols = data.shape[0]
     rows = data.shape[1]
-    print "read %d rows, %d cols" % (rows, cols)
+    print "read {} rows, {} cols".format(rows, cols)
     return data, cols, rows
 
 # ------------------------------------------------------------------------------
 def guess_key_from_conf(data):
-    key_idx = 0
+    key_idx = 1
     last = data.shape[1] - 1
-    for i in range(data.shape[0]):
+    for i in range(1, data.shape[0]):
         if data[i][last] > data[key_idx][last]:
             key_idx = i
-    return key_idx
+    return key_idx-1
 
 # ------------------------------------------------------------------------------
 def guess_key_from_diff(data):
@@ -31,7 +31,7 @@ def guess_key_from_diff(data):
                 curr_max = math.fabs(data[k][i])
                 key_idx = k
                 sample = i;
-    return key_idx-1, curr_max, sample
+    return key_idx-1, curr_max, data[0][sample]
 
 # ------------------------------------------------------------------------------
 def plot_conf(path):
@@ -58,7 +58,7 @@ def plot_corr(path):
     for i in range(1, cols): plt.plot(data[0], data[i])
     
     plt.title('Correlation')
-    plt.xlabel('Time (ps)')
+    plt.xlabel('Time (ns)')
     plt.ylabel('Correlation Coefficient')
     plt.gca().yaxis.grid(color='gray', linestyle='dashed')
     plt.show()
@@ -74,8 +74,9 @@ def plot_diff(path):
     for i in range(1, cols): plt.plot(data[0], data[i])
     
     plt.title('Differential Trace')
-    plt.xlabel('Time (ps)')
+    plt.xlabel('Time (ns)')
     plt.ylabel('Difference')
+    plt.gca().yaxis.grid(color='gray', linestyle='dashed')
     plt.show()
 
 # ------------------------------------------------------------------------------
@@ -89,6 +90,7 @@ def plot_relpow(path):
     plt.title('Power vs. Sensitive Data Value')
     plt.xlabel('Sensitive Data Value')
     plt.ylabel('Voltage (mV)')
+    plt.gca().yaxis.grid(color='gray', linestyle='dashed')
     plt.show()
 
 # ------------------------------------------------------------------------------
@@ -102,39 +104,11 @@ def plot_dist(path):
     plt.title('Sensitive Value Distribution')
     plt.xlabel('Sensitive Data Value')
     plt.ylabel('Trace Count')
+    plt.gca().yaxis.grid(color='gray', linestyle='dashed')
     plt.show()
 
 # ------------------------------------------------------------------------------
 def plot_pow(path):
-    """ Render a plot of power consumption over the sampled time period. """
-    index = -1
-    times = array.array('l')
-    power = array.array('d')
-    
-    fp = open(path, 'rt')
-    for line in fp:
-        if line == "done":
-            break
-        items = string.split(line)
-        if len(items) == 1:
-            index += 1
-            times.append(int(items[0]))
-            power.append(0)
-        elif len(items) == 2:
-            power[index] += float(items[1])
-        else:
-            print 'error: first power event before time stamp'
-    
-    plt.figure().canvas.set_window_title('Figure - Differential')
-    plt.plot(times, power)
-
-    plt.title('Power Trace')
-    plt.xlabel('Time (ps)')
-    plt.ylabel('Power')
-    plt.show()
-
-# ------------------------------------------------------------------------------
-def plot_pow2(path):
     """ TODO """
     data, cols, rows = read_csv(path)
 
@@ -163,8 +137,6 @@ if __name__ == "__main__":
                    help="create plot of trace sensitive value distribution")
     p.add_argument('-p', '--power', metavar='STR', action='append', default=[],
                    help="create instantaneous power consumption plot")
-    p.add_argument('-P', '--power2', metavar='STR', action='append', default=[],
-                   help="create instantaneous power consumption plot")
 
     args = p.parse_args()
 
@@ -174,5 +146,4 @@ if __name__ == "__main__":
     for path in args.rpow: plot_relpow(path)
     for path in args.dist: plot_dist(path)
     for path in args.power: plot_pow(path)
-    for path in args.power2: plot_pow2(path)
 

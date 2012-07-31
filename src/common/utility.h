@@ -31,7 +31,7 @@
 #define foreach         BOOST_FOREACH
 #define foreach_r       BOOST_REVERSE_FOREACH
 
-#define ENABLE_BENCHMARK
+// #define ENABLE_BENCHMARK
 #ifdef ENABLE_BENCHMARK
 
 #define BENCHMARK_DECLARE(n)                                                   \
@@ -51,6 +51,7 @@
 #else // !ENABLE_BENCHMARK
 
 #define BENCHMARK_DECLARE(n)
+#define BENCHMARK_SAMPLE(n)
 #define BENCHMARK_SAMPLE_WHEN(n, cond)
 
 #endif

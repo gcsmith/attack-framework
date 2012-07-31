@@ -5,7 +5,7 @@
 # -----------------------------------------------------------------------------
 
 set(tool_libs
-    common rt
+    common 
     ${Boost_LIBRARIES}
     ${SQLITE3_LIBRARIES}
 )
