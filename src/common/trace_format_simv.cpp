@@ -22,6 +22,8 @@
 
 using namespace std;
 
+static const char *TempWavFile = ".trace_reader_simv_temp_waveform";
+
 // -----------------------------------------------------------------------------
 class trace_reader_simv: public trace_reader {
 public:
@@ -67,7 +69,7 @@ bool trace_reader_simv::open(const string &path, const options &opt)
     // the first pass will build the set of unique event indices and write a
     // temporary file containing one trace waveform per line. the second pass
     // will consume this temporary file and generate each complete trace object
-    m_wavfile.open(".trace_reader_simv_temp_waveform", ios::out);
+    m_wavfile.open(TempWavFile, ios::out);
     if (!m_wavfile.is_open()) {
         fprintf(stderr, "failed to open temporary waveform file for writing\n");
         return false;
@@ -81,7 +83,7 @@ bool trace_reader_simv::open(const string &path, const options &opt)
     m_opt = opt;
     m_current = m_traces = 0;
 
-    foreach (const string &curr_path, globbed_paths) {
+    for (const string &curr_path : globbed_paths) {
         // determine the waveform filename from the timestamp filename
         const string suffix = util::path_stem(curr_path).substr(10);
         const string waveform = "power_waveform" + suffix + ".out";
@@ -103,7 +105,7 @@ bool trace_reader_simv::open(const string &path, const options &opt)
 
     // close the temporary trace file, then re-open it for reading
     m_wavfile.close();
-    m_wavfile.open(".trace_reader_simv_temp_waveform", ios::in);
+    m_wavfile.open(TempWavFile, ios::in);
     if (!m_wavfile.is_open()) {
         fprintf(stderr, "failed to open temporary waveform file for reading\n");
         return false;
@@ -187,7 +189,7 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base)
             else if (event_time >= m_records[record_index + 1].event) {
                 // dump the current trace data and select the next timestamp
                 m_wavfile << record_index << ' ';
-                foreach (const trace::sample &sample, curr_trace.samples())
+                for (const trace::sample &sample : curr_trace.samples())
                     m_wavfile << sample.time << ' ' << sample.power << ' ';
                 m_wavfile << endl;
                 curr_trace.clear();

@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    foreach (const string &msg, cl.get_strv("ascii-msg")) {
+    for (const string &msg : cl.get_strv("ascii-msg")) {
         // convert the ASCII string to a byte sequence and perform the hash
         vector<uint8_t> out, in(msg.begin(), msg.end());
         grostl::hash(in, out);
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
         printf("digest:  %s\n", util::btoa(out).c_str());
     }
 
-    foreach (const string &msg, cl.get_strv("hex-msg")) {
+    for (const string &msg : cl.get_strv("hex-msg")) {
         // convert the hex string to a byte sequence and perform the hash
         vector<uint8_t> out, in = util::atob(msg);
         grostl::hash(in, out);
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
         printf("digest:  %s\n", util::btoa(out).c_str());
     }
 
-    foreach (const string &msg, cl.get_strv("compress")) {
+    for (const string &msg : cl.get_strv("compress")) {
         // convert the hex string to a byte sequence and perform the permutation
         vector<uint8_t> out(64), in = util::atob(msg);
         if (128 != in.size()) {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
         printf("F(state):  %s\n", util::btoa(out).c_str());
     }
 
-    foreach (const string &msg, cl.get_strv("p-permute")) {
+    for (const string &msg : cl.get_strv("p-permute")) {
         // convert the hex string to a byte sequence and perform the permutation
         vector<uint8_t> out(64), in = util::atob(msg);
         if (64 != in.size()) {
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         printf("P(state):  %s\n", util::btoa(out).c_str());
     }
 
-    foreach (const string &msg, cl.get_strv("q-permute")) {
+    for (const string &msg : cl.get_strv("q-permute")) {
         // convert the hex string to a byte sequence and perform the permutation
         vector<uint8_t> out(64), in = util::atob(msg);
         if (64 != in.size()) {

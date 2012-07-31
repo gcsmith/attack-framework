@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
     srand(time(0));
 
     // print out the sbox for a given mask
-    foreach (const string &mask_str, cl.get_strv("mask")) {
+    for (const string &mask_str : cl.get_strv("mask")) {
         uint8_t mask = 0;
         if (!util::atob(mask_str, &mask, 1)) {
             fprintf(stderr, "mask mask: %s\n", mask_str.c_str());

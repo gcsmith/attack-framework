@@ -57,7 +57,7 @@ bool trace_reader_v2::summary(const string &path) const
     }
 
     set<string> keys;
-    foreach (const string &filename, paths) {
+    for (const string &filename : paths) {
         size_t beg = filename.find("k=");
         size_t end = filename.find("_", beg);
         if (beg != string::npos && end != string::npos)
@@ -67,7 +67,7 @@ bool trace_reader_v2::summary(const string &path) const
     printf("trace count: %zu\n", paths.size());
     printf("key count: %zu\n", keys.size());
 
-    foreach (const string &key, keys)
+    for (const string &key : keys)
         printf("    %s\n", key.c_str());
 
     return true;

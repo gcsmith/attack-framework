@@ -33,9 +33,9 @@ public:
     const trace::event_set &events(void) const { return m_events; }
 
 protected:
-    bool read_waveform_data(const string &path, unsigned long min_time,
-                            unsigned long max_time);
+    bool read_waveform_data(const string &path);
 
+    options          m_opt;
     trace::event_set m_events;  // set of unique power event timestamps
     vector<trace>    m_traces;  // power waveforms
     unsigned int     m_current; // current trace index for ::read()
@@ -55,6 +55,7 @@ bool trace_reader_out::summary(const string &path) const
 bool trace_reader_out::open(const string &path, const options &opt)
 {
     close();
+    m_opt = opt;
 
     // get the full list of .out files located in the input directory
     vector<string> paths;
@@ -64,8 +65,8 @@ bool trace_reader_out::open(const string &path, const options &opt)
     }
 
     // read in the waveform data for each scanned power trace
-    foreach (const string &trace_path, paths) {
-        if (!read_waveform_data(trace_path, opt.min_time, opt.max_time)) {
+    for (const string &trace_path : paths) {
+        if (!read_waveform_data(trace_path)) {
             fprintf(stderr, "error parsing trace '%s'\n", trace_path.c_str());
             return false;
         }
@@ -77,9 +78,7 @@ bool trace_reader_out::open(const string &path, const options &opt)
 }
 
 // -----------------------------------------------------------------------------
-bool trace_reader_out::read_waveform_data(const string &path,
-                                          unsigned long min_time,
-                                          unsigned long max_time)
+bool trace_reader_out::read_waveform_data(const string &path)
 {
     // attempt to open and parse the trace file
     ifstream fin(path.c_str());
@@ -92,7 +91,7 @@ bool trace_reader_out::read_waveform_data(const string &path,
     const string name(util::path_stem(path));
     vector<uint8_t> text;
 
-    foreach (const string &token, util::split(name, "_."))
+    for (const string &token : util::split(name, "_."))
         text.push_back(strtol(token.c_str(), NULL, 16));
 
     // initialize the trace object with the extracted message text
@@ -116,10 +115,10 @@ bool trace_reader_out::read_waveform_data(const string &path,
         else {
             // time index -- add a new trace entry, break if max time reached
             const unsigned long sample_time = strtol(&curr_line[0], NULL, 10);
-            if (min_time && sample_time < min_time) continue;
-            if (max_time && sample_time > max_time) break;
+            if (m_opt.min_time && sample_time < m_opt.min_time) continue;
+            if (m_opt.max_time && sample_time > m_opt.max_time) break;
 
-            if (!curr_trace.size() || sample_time > curr_trace.back().time) {
+            if (!curr_trace.size() || sample_time != curr_trace.back().time) {
                 curr_trace.push_back(trace::sample(sample_time, 0.0));
                 m_events.insert(sample_time);
             }

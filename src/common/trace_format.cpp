@@ -99,7 +99,7 @@ bool trace_reader::copy_trace(const trace &pt_in, trace &pt_out,
     trace::real last_power = 0.0f;
     trace::event_set::const_iterator curr_event = events.begin();
 
-    foreach (const trace::sample sample, pt_in.samples()) {
+    for (const trace::sample sample : pt_in.samples()) {
         // primetime may break the power sample into multiple events
         if (pt_out.size() && pt_out.back().time == sample.time)
             return false;

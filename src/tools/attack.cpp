@@ -86,6 +86,6 @@ int main(int argc, char *argv[])
 
     // initialize and run the attack engine
     attack_engine engine;
-    return engine.run(engine_opt, pReader.get());
+    return engine.run(engine_opt, pReader.get()) ? 0 : 1;
 }
 
