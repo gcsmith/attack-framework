@@ -83,7 +83,7 @@ bool trace_reader_simv::open(const string &path, const options &opt)
     m_opt = opt;
     m_current = m_traces = 0;
 
-    for (const string &curr_path : globbed_paths) {
+    foreach (const string &curr_path, globbed_paths) {
         // determine the waveform filename from the timestamp filename
         const string suffix = util::path_stem(curr_path).substr(10);
         const string waveform = "power_waveform" + suffix + ".out";
@@ -189,7 +189,7 @@ bool trace_reader_simv::read_waveforms(const string &path, size_t base)
             else if (event_time >= m_records[record_index + 1].event) {
                 // dump the current trace data and select the next timestamp
                 m_wavfile << record_index << ' ';
-                for (const trace::sample &sample : curr_trace.samples())
+                foreach (const trace::sample &sample, curr_trace.samples())
                     m_wavfile << sample.time << ' ' << sample.power << ' ';
                 m_wavfile << endl;
                 curr_trace.clear();

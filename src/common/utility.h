@@ -23,9 +23,13 @@
 #include <vector>
 #include <map>
 #include <sstream>
+#include <boost/foreach.hpp>
 
 #define EPSILON         0.0000001
 #define NUM_ELEMENTS(x) (sizeof(x) / sizeof(x[0]))
+
+#define foreach         BOOST_FOREACH
+#define foreach_r       BOOST_REVERSE_FOREACH
 
 // #define ENABLE_BENCHMARK
 #ifdef ENABLE_BENCHMARK

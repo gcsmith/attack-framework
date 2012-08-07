@@ -67,7 +67,7 @@ bool trace_writer_csv::write(const trace &pt)
         return false;
     }
 
-    for (const trace::sample &sample : pt.samples())
+    foreach (const trace::sample &sample, pt.samples())
         fout << sample.time << "," << sample.power << ",\n";
 
     return true;

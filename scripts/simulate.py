@@ -141,6 +141,8 @@ def parse_command_line():
                    help='design unit to simulate')
     p.add_argument('-v', '--vplus', metavar='arg',
                    help='verilog plusargs to pass to the testbench')
+    p.add_argument('-V', '--vdef', metavar='arg',
+                   help='verilog definitions to pass to the compiler')
     p.add_argument('-t', '--target', metavar='arg', default='vsim',
                    help='make target to build')
     p.add_argument('--amd64', action='store_true',
@@ -185,6 +187,8 @@ if __name__ == '__main__':
         run_cmd.append('UNIT=' + args.unit)
     if args.vplus != None:
         run_cmd.append('PLUS="' + args.vplus + '"')
+    if args.vdef != None:
+        run_cmd.append('VDEF="' + args.vdef + '"')
     
     proj_abs = os.path.abspath(args.proj)
     os.chdir(args.work)

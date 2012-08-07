@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    for (const string &pt : cl.get_strv("plaintext")) {
+    foreach (const string &pt, cl.get_strv("plaintext")) {
         // parse the plaintext and perform encryption
         if (!util::atob(pt, msg_in, 16)) {
             fprintf(stderr, "invalid plaintext specified. exiting\n");
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         printf("enc: pt=%s ek=%s ct=%s\n", pt.c_str(), ek.c_str(), ct.c_str());
     }
 
-    for (const string &ct : cl.get_strv("ciphertext")) {
+    foreach (const string &ct, cl.get_strv("ciphertext")) {
         // parse the ciphertext and perform decryption
         if (!util::atob(ct, msg_in, 16)) {
             fprintf(stderr, "invalid ciphertext specified. exiting\n");
