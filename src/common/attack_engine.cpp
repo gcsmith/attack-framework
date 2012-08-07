@@ -145,7 +145,7 @@ bool attack_engine::attack_setup(const options &opt, trace_reader *pReader)
     param_map.put("num_events", pReader->events().size());
     param_map.put("num_reports", m_reports);
 
-    for (const string &expr : util::split(opt.parameters, ",")) {
+    foreach (const string &expr, util::split(opt.parameters, ",")) {
         const size_t pos = expr.find_first_of('=');
         if (string::npos == pos) {
             fprintf(stderr, "bad parameter declaration: %s\n", expr.c_str());
@@ -209,7 +209,7 @@ void attack_engine::attack_shutdown(void)
     attack->write_results(m_results);
 
     // finally, destroy the threads themselves
-    for (attack_thread *thread : m_threads) delete thread;
+    foreach (attack_thread *thread, m_threads) delete thread;
     m_threads.clear();
 }
 
@@ -279,7 +279,7 @@ void attack_engine::write_diffs_report(const vector<double> &diffs, int nk)
     double max_diff = 0.0;
     size_t sample_number = 0;
 
-    for (uint32_t sample_time : m_reader->events()) {
+    foreach (uint32_t sample_time, m_reader->events()) {
         report << scientific << sample_time;
         for (int k = 0; k < nk; ++k) {
             double value = diffs[k * num_events + sample_number];

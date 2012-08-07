@@ -100,7 +100,7 @@ bool trace_reader_packed::open(const string &path, const options &opt)
     m_times.resize(num_samples);
     m_input.read((char *)&m_times[0], sizeof(uint32_t) * num_samples);
 
-    for (uint32_t event_time : m_times) {
+    foreach (uint32_t event_time, m_times) {
         if (m_tmin && event_time < m_tmin) continue;
         if (m_tmax && event_time > m_tmax) break;
         m_events.insert(event_time);
@@ -142,7 +142,7 @@ bool trace_reader_packed::read(trace &pt)
 
     // read in the sample data
     trace::sample data;
-    for (uint32_t event_time : m_times) {
+    foreach (uint32_t event_time, m_times) {
         m_input.read((char *)&data.power, sizeof(trace::real));
 
         if (m_tmin && data.time < m_tmin) continue;
@@ -177,7 +177,7 @@ bool trace_writer_packed::open(const string &path, const string &key,
     m_output.write((const char *)&m_samples, sizeof(uint32_t));
 
     // write the complete set of event times immediately before the samples
-    for (uint32_t event_time : events)
+    foreach (uint32_t event_time, events)
         m_output.write((const char *)&event_time, sizeof(uint32_t));
 
     return true;
@@ -217,7 +217,7 @@ bool trace_writer_packed::write(const trace &pt)
     // write the message text followed by the power waveform
     m_output.write((const char *)&pt.text()[0], sizeof(uint8_t) * m_textlen);
 
-    for (const trace::sample &sample : pt.samples())
+    foreach (const trace::sample &sample, pt.samples())
         m_output.write((const char *)&sample.power, sizeof(trace::real));
 
     ++m_ntraces;

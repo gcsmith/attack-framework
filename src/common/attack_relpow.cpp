@@ -103,7 +103,7 @@ void attack_relpow::process(const time_map &tmap, const trace &pt)
 
     // compute the maximum/peak power consumption across the samples
     real power = 0.0;
-    for (const trace::sample &sample : pt.samples())
+    foreach (const trace::sample &sample, pt.samples())
         power = max(power, (real)sample.power);
 
     m_pow[sensitive_value] += power;

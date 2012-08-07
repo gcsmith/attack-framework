@@ -65,7 +65,7 @@ bool trace_reader_out::open(const string &path, const options &opt)
     }
 
     // read in the waveform data for each scanned power trace
-    for (const string &trace_path : paths) {
+    foreach (const string &trace_path, paths) {
         if (!read_waveform_data(trace_path)) {
             fprintf(stderr, "error parsing trace '%s'\n", trace_path.c_str());
             return false;
@@ -91,7 +91,7 @@ bool trace_reader_out::read_waveform_data(const string &path)
     const string name(util::path_stem(path));
     vector<uint8_t> text;
 
-    for (const string &token : util::split(name, "_."))
+    foreach (const string &token, util::split(name, "_."))
         text.push_back(strtol(token.c_str(), NULL, 16));
 
     // initialize the trace object with the extracted message text

@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     des::key_schedule(ek, sk);
     print_keys(sk, cl.get_flag("dec"));
 
-    for (const string &plaintext : cl.get_strv("plaintext")) {
+    foreach (const string &plaintext, cl.get_strv("plaintext")) {
         // parse the plaintext and perform encryption
         uint64_t pt = atob_be(plaintext);
         uint64_t ct = des::encrypt(pt, sk);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
                (long long)util::rev64(ct));
     }
 
-    for (const string &ciphertext : cl.get_strv("ciphertext")) {
+    foreach (const string &ciphertext, cl.get_strv("ciphertext")) {
         // parse the ciphertext and perform decryption
         uint64_t ct = atob_be(ciphertext);
         uint64_t pt = des::decrypt(ct, sk);
