@@ -32,7 +32,8 @@ public:
     virtual bool setup(crypto_instance *crypto, const parameters &params);
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
-    virtual void coalesce(attack_instance *inst);
+    virtual void clone(const attack_instance *inst);
+    virtual void coalesce(const attack_instance *inst);
     virtual void write_results(const string &path);
     virtual bool cleanup();
 
@@ -56,6 +57,7 @@ protected:
     vector<real> m_maxes;
     int m_guesses;
     int m_center;
+    boost::mutex m_mutex;
 };
 
 // -----------------------------------------------------------------------------
@@ -128,6 +130,8 @@ bool attack_cpa<real>::setup(crypto_instance *crypto, const parameters &params)
 template <typename real>
 void attack_cpa<real>::process(const time_map &tmap, const trace &pt)
 {
+    boost::lock_guard<boost::mutex> lock(m_mutex);
+
     // accumulate power and power^2 for each sample
     for (size_t s = 0; s < pt.size(); ++s) {
         m_t1[tmap[s]] += pt[s].power;
@@ -155,6 +159,8 @@ void attack_cpa<real>::process(const time_map &tmap, const trace &pt)
 template <typename real>
 void attack_cpa<real>::record_interval(size_t n)
 {
+    boost::lock_guard<boost::mutex> lock(m_mutex);
+
     // compute differentials and interval maxes
     compute_diffs(&m_dtemp[0]);
 
@@ -168,9 +174,38 @@ void attack_cpa<real>::record_interval(size_t n)
 
 // -----------------------------------------------------------------------------
 template <typename real>
-void attack_cpa<real>::coalesce(attack_instance *inst)
+void attack_cpa<real>::clone(const attack_instance *inst)
 {
     attack_cpa *other = (attack_cpa *)inst;
+    boost::lock_guard<boost::mutex> lock(other->m_mutex);
+
+    m_traces = other->m_traces;
+    m_nevents = other->m_nevents;
+    m_nreports = other->m_nreports;
+    m_guesses = other->m_guesses;
+
+    m_t1 = other->m_t1;
+    m_t2 = other->m_t2;
+    m_w1 = other->m_w1;
+    m_w2 = other->m_w2;
+    m_tw = other->m_tw;
+
+    if (!m_maxes.size()) {
+        m_dtemp.resize(other->m_dtemp.size(), 0);
+        m_maxes.resize(other->m_maxes.size(), 0);
+    }
+}
+
+// -----------------------------------------------------------------------------
+template <typename real>
+void attack_cpa<real>::coalesce(const attack_instance *inst)
+{
+    attack_cpa *other = (attack_cpa *)inst;
+    boost::lock_guard<boost::mutex> lock(other->m_mutex);
+
+    assert(m_guesses == other->m_guesses);
+    assert(m_nevents == other->m_nevents);
+
     m_traces += other->m_traces;
 
     for (size_t s = 0; s < m_nevents; ++s) {
@@ -182,9 +217,9 @@ void attack_cpa<real>::coalesce(attack_instance *inst)
         m_w1[k] += other->m_w1[k];
         m_w2[k] += other->m_w2[k];
 
-        const size_t offset = k * m_nevents;
-        for (size_t s = 0; s < m_nevents; ++s)
-            m_tw[offset + s] += other->m_tw[offset + s];
+        real *dst = &m_tw[k * m_nevents];
+        const real *src = &other->m_tw[k * m_nevents];
+        for (size_t s = 0; s < m_nevents; ++s) dst[s] += src[s];
     }
 }
 

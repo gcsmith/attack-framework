@@ -66,8 +66,11 @@ public:
     //! Record the intermediate attack state for the specified interval.
     virtual void record_interval(size_t n) = 0;
 
+    //! Copy the contents of 'inst' into this attack instance.
+    virtual void clone(const attack_instance *inst) = 0;
+
     //! Merge the state of two attack_instance objects together.
-    virtual void coalesce(attack_instance *inst) = 0;
+    virtual void coalesce(const attack_instance *inst) = 0;
 
     //! Write attack results to the specified directory
     virtual void write_results(const std::string &path) = 0;

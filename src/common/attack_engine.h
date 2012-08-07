@@ -23,10 +23,13 @@
 #include "trace_format.h"
 
 class attack_thread;
+class report_thread;
 
 //! front-end for performing power analysis attacks
 class attack_engine {
 public:
+    typedef std::vector<attack_thread *> thread_list;
+
     //! user-specified options to configure the attack
     struct options {
         std::string attack_name;
@@ -66,16 +69,17 @@ protected:
     void attack_shutdown(void);
 
 protected:
-    typedef std::vector<attack_thread *> thread_list;
-
     size_t              m_reports;  //! total number of reports to generate
     size_t              m_interval; //! user specified reporting interval
     size_t              m_index;    //! current available trace index
+    size_t              m_nthreads; //! number of threads to launch
     std::string         m_results;  //! output results directory
     trace_reader       *m_reader;   //! generic trace reader
     boost::mutex        m_mutex;    //! critical section for trace_reader
     boost::thread_group m_group;    //! collection of worker threads
     thread_list         m_threads;  //! collection of worker instances
+    report_thread      *m_rt;
+    boost::thread       m_thrd;
 };
 
 #endif // ATTACK_ENGINE__H

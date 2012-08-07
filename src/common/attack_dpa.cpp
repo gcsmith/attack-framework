@@ -31,7 +31,8 @@ public:
     virtual bool setup(crypto_instance *crypto, const util::parameters &params);
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
-    virtual void coalesce(attack_instance *inst);
+    virtual void clone(const attack_instance *inst);
+    virtual void coalesce(const attack_instance *inst);
     virtual void write_results(const string &path);
     virtual bool cleanup();
 
@@ -52,6 +53,7 @@ protected:
     vector<real> m_maxes;   //!< interval maxes for each report interval
     crypto_instance *m_crypto;
     int m_guesses;
+    boost::mutex m_mutex;
 };
 
 // -----------------------------------------------------------------------------
@@ -135,6 +137,8 @@ bool attack_dpa<real>::setup(crypto_instance *crypto,
 template <typename real>
 void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
 {
+    boost::lock_guard<boost::mutex> lock(m_mutex);
+
     for (int k = 0; k < m_guesses; ++k) {
         const unsigned int target = m_crypto->compute(m_byte, k);
         const unsigned int weight = util::popcnt[target & m_mask];
@@ -158,6 +162,8 @@ void attack_dpa<real>::process(const time_map &tmap, const trace &pt)
 template <typename real>
 void attack_dpa<real>::record_interval(size_t n)
 {
+    boost::lock_guard<boost::mutex> lock(m_mutex);
+
     // store bin sizes for this interval
     size_t *c = &m_group[n * m_guesses * 3];
     for (int i = 0; i < m_guesses * 3; ++i) c[i] = m_binsz[i];
@@ -172,9 +178,31 @@ void attack_dpa<real>::record_interval(size_t n)
 
 // -----------------------------------------------------------------------------
 template <typename real>
-void attack_dpa<real>::coalesce(attack_instance *inst)
+void attack_dpa<real>::clone(const attack_instance *inst)
 {
     attack_dpa *other = (attack_dpa *)inst;
+    boost::lock_guard<boost::mutex> lock(m_mutex);
+
+    m_nevents = other->m_nevents;
+    m_nreports = other->m_nreports;
+    m_binsz = other->m_binsz;
+    m_guesses = other->m_guesses;
+    m_diffs = other->m_diffs;
+
+    if (!m_maxes.size()) {
+        m_group.resize(other->m_group.size(), 0);
+        m_dtemp.resize(other->m_dtemp.size(), 0);
+        m_maxes.resize(other->m_maxes.size(), 0);
+    }
+}
+
+// -----------------------------------------------------------------------------
+template <typename real>
+void attack_dpa<real>::coalesce(const attack_instance *inst)
+{
+    const attack_dpa *other = (attack_dpa *)inst;
+    boost::lock_guard<boost::mutex> lock(m_mutex);
+
     assert(m_guesses == other->m_guesses);
     assert(m_nevents == other->m_nevents);
 

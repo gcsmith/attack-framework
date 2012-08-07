@@ -34,7 +34,8 @@ public:
     virtual bool setup(crypto_instance *crypto, const parameters &params);
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
-    virtual void coalesce(attack_instance *inst);
+    virtual void clone(const attack_instance *inst);
+    virtual void coalesce(const attack_instance *inst);
     virtual void write_results(const string &path);
     virtual bool cleanup();
 
@@ -129,9 +130,14 @@ void attack_pscc::record_interval(size_t n)
 }
 
 // -----------------------------------------------------------------------------
-void attack_pscc::coalesce(attack_instance *inst)
+void attack_pscc::clone(const attack_instance *inst)
 {
-    attack_pscc *other = (attack_pscc *)inst;
+}
+
+// -----------------------------------------------------------------------------
+void attack_pscc::coalesce(const attack_instance *inst)
+{
+    const attack_pscc *other = (attack_pscc *)inst;
     
     m_w1 += other->m_w1;
     m_w2 += other->m_w2;

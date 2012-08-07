@@ -34,7 +34,8 @@ public:
     virtual bool setup(crypto_instance *crypto, const parameters &params);
     virtual void process(const time_map &tmap, const trace &pt);
     virtual void record_interval(size_t n);
-    virtual void coalesce(attack_instance *inst);
+    virtual void clone(const attack_instance *inst);
+    virtual void coalesce(const attack_instance *inst);
     virtual void write_results(const string &path);
     virtual bool cleanup();
 
@@ -116,7 +117,12 @@ void attack_relpow::record_interval(size_t n)
 }
 
 // -----------------------------------------------------------------------------
-void attack_relpow::coalesce(attack_instance *inst)
+void attack_relpow::clone(const attack_instance *inst)
+{
+}
+
+// -----------------------------------------------------------------------------
+void attack_relpow::coalesce(const attack_instance *inst)
 {
     const int num_states = m_crypto->estimate_bits() * m_bytes;
     attack_relpow *other = (attack_relpow *)inst;
