@@ -17,10 +17,9 @@
 #include <algorithm>
 #include <cstdio>
 #include <ctime>
-#include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/foreach.hpp>
+#include <boost/regex.hpp>
 #include "utility.h"
 
 using namespace std;
@@ -74,7 +73,7 @@ size_t glob(const string &path, const string &pattern, vector<string> &out)
     const boost::regex regex_pattern(pattern);
     fs::directory_iterator iter_begin(path), iter_end;
 
-    BOOST_FOREACH (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
+    foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
         if (regex_search(curr_path.string(), regex_pattern))
             out.push_back(curr_path.string());
     }
@@ -94,7 +93,7 @@ size_t glob_recursive(const string &path, const string &pattern,
     const boost::regex regex_pattern(pattern);
     fs::recursive_directory_iterator iter_begin(path), iter_end;
 
-    BOOST_FOREACH (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
+    foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end)) {
         if (regex_search(curr_path.string(), regex_pattern))
             out.push_back(curr_path.string());
     }
@@ -112,7 +111,7 @@ bool directory_search(const string &path, const string &pattern)
     const boost::regex regex_pattern(pattern);
     fs::recursive_directory_iterator iter_begin(path), iter_end;
 
-    BOOST_FOREACH (const fs::path &curr_path, make_pair(iter_begin, iter_end))
+    foreach (const fs::path &curr_path, make_pair(iter_begin, iter_end))
         if (regex_search(curr_path.string(), regex_pattern)) return true;
 
     return false;
